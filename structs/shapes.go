@@ -9,3 +9,11 @@ func Perimeter(height, width float64) float64 {
 	perimeter := 2.0 * (height + width)
 	return perimeter
 }
+
+func Area(height, width float64) float64 {
+	area := height * width
+	if area < 0 {
+		return 0
+	}
+	return area
+}
