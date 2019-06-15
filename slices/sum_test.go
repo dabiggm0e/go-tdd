@@ -21,6 +21,12 @@ func TestSum(t *testing.T) {
 	})
 }
 
+func assertSliceSum(t *testing.T, got, want []int) {
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v want %v", got, want)
+	}
+}
+
 func TestSumAll(t *testing.T) {
 	slice1 := []int{1, 2, 3}
 	slice2 := []int{5, 6, 7, 8}
@@ -29,20 +35,29 @@ func TestSumAll(t *testing.T) {
 	want := []int{6, 26, 0}
 	got := SumAll(slice1, slice2, slice3)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v want %v. %v %v %v", got, want, slice1, slice2, slice3)
-	}
+	assertSliceSum(t, got, want)
 }
 
 func TestSumAllTails(t *testing.T) {
-	slice1 := []int{5}
-	slice2 := []int{1, 2, 3, 4}
-	slice3 := []int{}
+	t.Run("Sum tails of slices", func(t *testing.T) {
+		slice1 := []int{5}
+		slice2 := []int{1, 2, 3, 4}
+		slice3 := []int{6, 7}
 
-	want := []int{0, 9, 0}
-	got := SumAllTails(slice1, slice2, slice3)
+		want := []int{0, 9, 7}
+		got := SumAllTails(slice1, slice2, slice3)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v want %v. %v %v %v", got, want, slice1, slice2, slice3)
-	}
+		assertSliceSum(t, got, want)
+	})
+
+	t.Run("Sum tails of slices safely with empty slice", func(t *testing.T) {
+		slice1 := []int{5}
+		slice2 := []int{1, 2, 3, 4}
+		slice3 := []int{}
+
+		want := []int{0, 9, 0}
+		got := SumAllTails(slice1, slice2, slice3)
+
+		assertSliceSum(t, got, want)
+	})
 }
