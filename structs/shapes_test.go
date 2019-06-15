@@ -2,47 +2,47 @@ package shapes
 
 import "testing"
 
-func assertCorrectShapeSize(t *testing.T, got, want, height, width float64) {
+func assertCorrectRectangleSize(t *testing.T, got, want float64, r Rectangle) {
 	if got != want {
-		t.Errorf("got %.2f want %.2f. %.2f %.2f", got, want, height, width)
+		t.Errorf("got %.2f want %.2f. %.2f %.2f", got, want, r.Height, r.Width)
 	}
 }
 
 func TestPerimeter(t *testing.T) {
 
 	t.Run("Calculate perimeter", func(t *testing.T) {
-		height, width := float64(10.5), float64(12.5)
-		got := Perimeter(height, width)
+
+		rectangle := Rectangle{10.5, 12.5}
+		got := Perimeter(rectangle)
 		want := float64(46.0)
 
-		assertCorrectShapeSize(t, got, want, height, width)
+		assertCorrectRectangleSize(t, got, want, rectangle)
 	})
 
 	t.Run("Calculate perimeter with negatives", func(t *testing.T) {
-		height, width := float64(-10.5), float64(12.5)
-		got := Perimeter(height, width)
+
+		rectangle := Rectangle{-10.5, 12.5}
+		got := Perimeter(rectangle)
 		want := float64(0.0)
 
-		assertCorrectShapeSize(t, got, want, height, width)
+		assertCorrectRectangleSize(t, got, want, rectangle)
 	})
 }
 
 func TestArea(t *testing.T) {
 	t.Run("Calculate area", func(t *testing.T) {
-		height := 10.0
-		width := 5.0
-		got := Area(height, width)
+		rectangle := Rectangle{10.0, 5.0}
+		got := Area(rectangle)
 		want := 50.0
 
-		assertCorrectShapeSize(t, got, want, height, width)
+		assertCorrectRectangleSize(t, got, want, rectangle)
 	})
 
 	t.Run("Calculate area with negatives", func(t *testing.T) {
-		height := -10.0
-		width := 5.0
-		got := Area(height, width)
+		rectangle := Rectangle{-10.0, 5.0}
+		got := Area(rectangle)
 		want := 0.0
 
-		assertCorrectShapeSize(t, got, want, height, width)
+		assertCorrectRectangleSize(t, got, want, rectangle)
 	})
 }
