@@ -45,6 +45,48 @@ func TestInsert(t *testing.T) {
 
 }
 
+func TestUpdate(t *testing.T) {
+	t.Run("Updating existing word", func(t *testing.T) {
+		word := "word"
+		want := "desc"
+		dict := Dictionary{word: word}
+		err := dict.Update(word, want)
+		assertErrors(t, err, nil)
+		assertDefinition(t, dict, word, want)
+	})
+
+	t.Run("Updating non existing word", func(t *testing.T) {
+		word := "word"
+		want := "desc"
+		dict := Dictionary{}
+		err := dict.Update(word, want)
+		assertErrors(t, err, ErrWordDoesNotExists)
+	})
+
+}
+
+func TestDelete(t *testing.T) {
+
+	t.Run("Existing word", func(t *testing.T) {
+		word := "word"
+		desc := "Test data"
+		dict := Dictionary{word: desc}
+		err := dict.Delete(word)
+		assertErrors(t, err, nil)
+		_, err = dict.Search(word)
+		if err != ErrNotFound {
+			t.Errorf("Word '%s' was expected to be deleted", word)
+		}
+	})
+
+	t.Run("Non existent word", func(t *testing.T) {
+		word := "word"
+		dict := Dictionary{"s": "Test data"}
+		err := dict.Delete(word)
+		assertErrors(t, err, ErrWordDoesNotExists)
+	})
+}
+
 func assertErrors(t *testing.T, got, want error) {
 	t.Helper()
 
