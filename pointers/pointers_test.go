@@ -11,6 +11,14 @@ func TestWallet(t *testing.T) {
 		}
 	}
 
+	assertError := func(t *testing.T, wallet *Wallet, err error, want string) {
+		if err == nil {
+			t.Errorf("Didn't get any error! Need '%v'. %v", want, wallet)
+		} else if err.Error() != want {
+			t.Errorf("got err='%v' need '%v'. %v", err, want, wallet)
+		}
+	}
+
 	t.Run("Test Bitcoin deposit", func(t *testing.T) {
 		wallet := Wallet{}
 		wallet.Deposit(Bitcoin(10.0))
@@ -25,6 +33,16 @@ func TestWallet(t *testing.T) {
 		want := Bitcoin(5.0)
 
 		assertBalance(t, &wallet, want)
+	})
+
+	t.Run("Test overdraft Withdraw Bitcoin", func(t *testing.T) {
+		startingBalance := Bitcoin(15.0)
+		wallet := Wallet{startingBalance}
+		err := wallet.Withdraw(Bitcoin(20.0))
+
+		assertBalance(t, &wallet, startingBalance)
+		assertError(t, &wallet, err, "Overdrafting")
+
 	})
 
 	t.Run("Test printing balance", func(t *testing.T) {
