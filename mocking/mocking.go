@@ -4,21 +4,35 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 const (
 	countDownStart = 3
 	finalWord      = "Go"
+	sleepDuration  = 1
 )
 
-func CountDown(writer io.Writer) {
+type Sleeper interface {
+	Sleep()
+}
+
+type DefaultSleeper struct{}
+
+func (d *DefaultSleeper) Sleep() {
+	time.Sleep(time.Second * sleepDuration)
+}
+
+func CountDown(writer io.Writer, s Sleeper) {
 	for i := countDownStart; i > 0; i-- {
+		s.Sleep()
 		fmt.Fprintln(writer, i)
 	}
-	fmt.Fprint(writer, finalWord)
 
+	s.Sleep()
+	fmt.Fprint(writer, finalWord)
 }
 
 func main() {
-	CountDown(os.Stdout)
+	CountDown(os.Stdout, &DefaultSleeper{})
 }
