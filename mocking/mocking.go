@@ -13,15 +13,29 @@ const (
 	sleepDuration  = 1
 )
 
+////////////////////////
 type Sleeper interface {
 	Sleep()
 }
 
+/////////////////
 type DefaultSleeper struct{}
 
 func (d *DefaultSleeper) Sleep() {
 	time.Sleep(time.Second * sleepDuration)
 }
+
+//////////////////
+type ConfigurableSleeper struct {
+	duration time.Duration
+	sleep    func(time.Duration)
+}
+
+func (c *ConfigurableSleeper) Sleep() {
+	c.sleep(c.duration)
+}
+
+///////////////////
 
 func CountDown(writer io.Writer, s Sleeper) {
 	for i := countDownStart; i > 0; i-- {
@@ -34,5 +48,7 @@ func CountDown(writer io.Writer, s Sleeper) {
 }
 
 func main() {
-	CountDown(os.Stdout, &DefaultSleeper{})
+	//CountDown(os.Stdout, &DefaultSleeper{})
+	sleeper := &ConfigurableSleeper{1 * time.Duration, time.Sleep}         //// FIXME:
+	CountDown(os.Stdout, &ConfigurableSleeper{1 * time.Duration, sleeper}) //// FIXME:
 }

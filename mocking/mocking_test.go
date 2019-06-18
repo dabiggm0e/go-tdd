@@ -4,11 +4,42 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+	"time"
+)
+
+////////////////
+type CountDownOperationSpy struct {
+	Calls []string
+}
+
+func (c *CountDownOperationSpy) Sleep() {
+	c.Calls = append(c.Calls, sleep)
+}
+
+func (c *CountDownOperationSpy) Write(b []byte) (n int, err error) {
+	c.Calls = append(c.Calls, write)
+	return
+}
+
+/////////////
+
+type SpyTime struct {
+	durationSlept time.Duration
+}
+
+func (s *SpyTime) Sleep(duration time.Duration) {
+	s.durationSlept = duration
+}
+
+//////////////////
+const (
+	sleep = "sleep"
+	write = "write"
 )
 
 func TestCountDown(t *testing.T) {
 
-	t.Run("3 to Go", func(t *testing.T) {
+	t.Run("print 3 to Go", func(t *testing.T) {
 		buffer := &bytes.Buffer{}
 		spySleepPrinter := &CountDownOperationSpy{}
 
@@ -44,20 +75,14 @@ Go`
 	})
 }
 
-type CountDownOperationSpy struct {
-	Calls []string
-}
+func TestConfigurableSleeper(t *testing.T) {
+	sleepTime := time.Second * 5
+	spyTime := &SpyTime{}
 
-func (c *CountDownOperationSpy) Sleep() {
-	c.Calls = append(c.Calls, sleep)
-}
+	sleeper := &ConfigurableSleeper{sleepTime, spyTime.Sleep}
+	sleeper.Sleep()
 
-func (c *CountDownOperationSpy) Write(b []byte) (n int, err error) {
-	c.Calls = append(c.Calls, write)
-	return
+	if spyTime.durationSlept != sleepTime {
+		t.Errorf("should have slept for %v, but slept fot %v", sleepTime, spyTime.durationSlept)
+	}
 }
-
-const (
-	sleep = "sleep"
-	write = "write"
-)
