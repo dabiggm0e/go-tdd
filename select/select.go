@@ -6,22 +6,24 @@ import (
 	"time"
 )
 
-func Racer(url1, url2 string) (winner string, err error) {
-	startA := time.Now()
-	http.Get(url1)
-	aDuration := time.Now().Sub(startA)
+func measureResponseTime(url string) time.Duration {
+	start := time.Now()
+	http.Get(url)
+	return time.Now().Sub(start)
+}
 
-	startB := time.Now()
-	http.Get(url2)
-	bDuration := time.Now().Sub(startB)
+func Racer(a, b string) (winner string, err error) {
+
+	aDuration := measureResponseTime(a)
+	bDuration := measureResponseTime(b)
 
 	winner, err = "", nil
 	if aDuration < bDuration {
-		winner = url1
+		return a, nil
 	} else if bDuration < aDuration {
-		winner = url2
+		return b, nil
 	} else {
 		err = errors.New("No one won")
 	}
-	return winner, nil
+	return "", err
 }
