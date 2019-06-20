@@ -7,27 +7,33 @@ import (
 	"time"
 )
 
-func makeDelayedServer(delay time.Duration) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(delay)
-		w.WriteHeader(http.StatusOK)
-	}))
-}
-
 func TestRacer(t *testing.T) {
-	slowServer := makeDelayedServer(20 * time.Millisecond)
-	defer slowServer.Close()
-	fastServer := makeDelayedServer(0 * time.Millisecond)
-	defer fastServer.Close()
 
-	slowUrl := slowServer.URL
-	fastUrl := fastServer.URL
+	t.Run("Successful pinging of URLs", func(t *testing.T) {
+		slowServer, fastServer := initMockServers(20*time.Millisecond, 0*time.Millisecond)
+		defer slowServer.Close()
+		defer fastServer.Close()
+		slowUrl := slowServer.URL
+		fastUrl := fastServer.URL
 
-	want := fastUrl
-	got, err := Racer(slowUrl, fastUrl)
+		want := fastUrl
+		got, err := Racer(slowUrl, fastUrl)
 
-	assertError(t, err)
-	assertResults(t, got, want)
+		assertError(t, err, nil)
+		assertResults(t, got, want)
+	})
+
+	t.Run("Timeout in pinging URLs", func(t *testing.T) {
+		slowServer, fastServer := initMockServers(10*time.Second, 11*time.Second)
+		defer slowServer.Close()
+		defer fastServer.Close()
+		slowUrl := slowServer.URL
+		fastUrl := fastServer.URL
+
+		_, err := Racer(slowUrl, fastUrl)
+
+		assertError(t, err, ERRTIMEOUT)
+	})
 
 }
 
@@ -35,15 +41,27 @@ func assertResults(t *testing.T, got, want string) {
 	t.Helper()
 
 	if got != want {
-		t.Errorf("got %v want %v", got, want)
+		t.Errorf("got %#v want %#v", got, want)
 	}
 }
 
-func assertError(t *testing.T, err error) {
+func assertError(t *testing.T, got, want error) {
 	t.Helper()
 
-	switch err {
-	case ERRTIMEOUT:
-		t.Fatalf("Error: %v", err.Error())
+	if got != want {
+		t.Errorf("got %#v want %#v", got, want)
 	}
+}
+
+func makeDelayedServer(delay time.Duration) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(delay)
+		w.WriteHeader(http.StatusOK)
+	}))
+}
+
+func initMockServers(serverADelay, serverBDelay time.Duration) (serverA, serverB *httptest.Server) {
+	serverA = makeDelayedServer(serverADelay)
+	serverB = makeDelayedServer(serverBDelay)
+	return
 }

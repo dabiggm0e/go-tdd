@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	TIMEOUT = 3
+	TIMEOUT = 1
 )
 
 var (
