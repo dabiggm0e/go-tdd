@@ -6,24 +6,44 @@ import (
 	"time"
 )
 
-func measureResponseTime(url string) time.Duration {
-	start := time.Now()
+const (
+	TIMEOUT = 3
+)
+
+var (
+	ERRTIMEOUT = errors.New("Fetching URL operation timed out")
+)
+
+func timeout(d time.Duration, timeoutChan *chan bool) {
+	time.Sleep(d)
+	*timeoutChan <- true
+}
+
+func ping(url string, ch *chan bool) {
 	http.Get(url)
-	return time.Now().Sub(start)
+	*ch <- true
 }
 
 func Racer(a, b string) (winner string, err error) {
+	pingA := make(chan bool)
+	pingB := make(chan bool)
+	timedOut := make(chan bool)
+	go ping(a, &pingA)
+	go ping(b, &pingB)
+	go timeout(TIMEOUT*time.Second, &timedOut)
 
-	aDuration := measureResponseTime(a)
-	bDuration := measureResponseTime(b)
-
-	winner, err = "", nil
-	if aDuration < bDuration {
-		return a, nil
-	} else if bDuration < aDuration {
-		return b, nil
-	} else {
-		err = errors.New("No one won")
+	select {
+	case <-pingA:
+		{
+			return a, nil
+		}
+	case <-pingB:
+		{
+			return b, nil
+		}
+	case <-timedOut:
+		{
+			return "", ERRTIMEOUT
+		}
 	}
-	return "", err
 }
