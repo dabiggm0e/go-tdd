@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	ERRTIMEOUT = errors.New("Fetching URL operation timed out")
+	ERRTIMEOUT       = errors.New("Fetching URL operation timed out")
+	tenSecondTimeout = 10 * time.Second
 )
 
 func ping(url string) chan bool {
@@ -20,8 +21,11 @@ func ping(url string) chan bool {
 	return ch
 }
 
-func Racer(a, b string, timeout time.Duration) (winner string, err error) {
+func Racer(a, b string) (winner string, err error) {
+	return ConfigurableRacer(a, b, tenSecondTimeout)
+}
 
+func ConfigurableRacer(a, b string, timeout time.Duration) (winner string, err error) {
 	select {
 	case <-ping(a):
 		{
