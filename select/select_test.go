@@ -17,7 +17,7 @@ func TestRacer(t *testing.T) {
 		fastUrl := fastServer.URL
 
 		want := fastUrl
-		got, err := Racer(slowUrl, fastUrl)
+		got, err := Racer(slowUrl, fastUrl, 3*time.Second)
 
 		assertError(t, err, nil)
 		assertResults(t, got, want)
@@ -30,7 +30,7 @@ func TestRacer(t *testing.T) {
 		slowUrl := slowServer.URL
 		fastUrl := fastServer.URL
 
-		_, err := Racer(slowUrl, fastUrl)
+		_, err := Racer(slowUrl, fastUrl, 1*time.Second)
 
 		assertError(t, err, ERRTIMEOUT)
 	})

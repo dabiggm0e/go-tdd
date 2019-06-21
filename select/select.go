@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-const (
-	TIMEOUT = 3
-)
-
 var (
 	ERRTIMEOUT = errors.New("Fetching URL operation timed out")
 )
@@ -24,7 +20,7 @@ func ping(url string) chan bool {
 	return ch
 }
 
-func Racer(a, b string) (winner string, err error) {
+func Racer(a, b string, timeout time.Duration) (winner string, err error) {
 
 	select {
 	case <-ping(a):
@@ -35,7 +31,7 @@ func Racer(a, b string) (winner string, err error) {
 		{
 			return b, nil
 		}
-	case <-time.After(time.Second * TIMEOUT):
+	case <-time.After(timeout):
 		{
 			return "", ERRTIMEOUT
 		}
