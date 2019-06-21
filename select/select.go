@@ -7,41 +7,35 @@ import (
 )
 
 const (
-	TIMEOUT = 1
+	TIMEOUT = 3
 )
 
 var (
 	ERRTIMEOUT = errors.New("Fetching URL operation timed out")
 )
 
-func timeout(d time.Duration, timeoutChan *chan bool) {
-	time.Sleep(d)
-	*timeoutChan <- true
-}
+func ping(url string) chan bool {
+	ch := make(chan bool)
+	go func() {
+		http.Get(url)
+		close(ch)
+	}()
 
-func ping(url string, ch *chan bool) {
-	http.Get(url)
-	*ch <- true
+	return ch
 }
 
 func Racer(a, b string) (winner string, err error) {
-	pingA := make(chan bool)
-	pingB := make(chan bool)
-	timedOut := make(chan bool)
-	go ping(a, &pingA)
-	go ping(b, &pingB)
-	go timeout(TIMEOUT*time.Second, &timedOut)
 
 	select {
-	case <-pingA:
+	case <-ping(a):
 		{
 			return a, nil
 		}
-	case <-pingB:
+	case <-ping(b):
 		{
 			return b, nil
 		}
-	case <-timedOut:
+	case <-time.After(time.Second * TIMEOUT):
 		{
 			return "", ERRTIMEOUT
 		}
