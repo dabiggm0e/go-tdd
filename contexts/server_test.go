@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +13,10 @@ type SpyStore struct {
 	response string
 	t        *testing.T
 	ctx      context.Context
+}
+
+type SpyRecorder struct {
+	written bool
 }
 
 func (s *SpyStore) Fetch(ctx context.Context) (string, error) {
@@ -41,6 +46,20 @@ func (s *SpyStore) Fetch(ctx context.Context) (string, error) {
 	case res := <-data:
 		return res, nil
 	}
+}
+
+func (s *SpyRecorder) Header() http.Header {
+	s.written = true
+	return nil
+}
+
+func (s *SpyRecorder) WriteHeader(statusCode int) {
+	s.written = true
+}
+
+func (s *SpyRecorder) Write([]byte) (int, error) {
+	s.written = true
+	return 0, errors.New("not implemeted")
 }
 
 func TestHandler(t *testing.T) {
@@ -74,8 +93,13 @@ func TestHandler(t *testing.T) {
 		time.AfterFunc(time.Millisecond*5, cancel)
 		request = request.WithContext(cancellingctx)
 
-		response := httptest.NewRecorder()
+		response := &SpyRecorder{}
+
 		server.ServeHTTP(response, request)
+
+		if response.written {
+			t.Error("a response should not have been written")
+		}
 
 	})
 
