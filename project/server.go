@@ -7,5 +7,14 @@ import (
 )
 
 func PlayerServer(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "20")
+
+	player := r.URL.Path[len("/players/"):] // extract player name from the GET Path
+
+	switch player {
+	case "Mo":
+		fmt.Fprintf(w, "20")
+	case "Ziggy":
+		fmt.Fprintf(w, "10")
+	}
+
 }
