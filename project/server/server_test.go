@@ -16,8 +16,8 @@ func TestGETPlayers(t *testing.T) {
 	t.Run("Getting Mo's score", func(t *testing.T) {
 		request, _ := newGetScoreRequest("Mo")
 		response := httptest.NewRecorder()
-		store := &StubPlayerStore{}
-		playerServer := &PlayerServer{store: store}
+		store := initPlayersStore()
+		playerServer := &PlayerServer{Store: store}
 		playerServer.ServeHTTP(response, request)
 
 		assertResponseReply(t, response.Body.String(), "20")
@@ -27,8 +27,8 @@ func TestGETPlayers(t *testing.T) {
 		request, _ := newGetScoreRequest("Ziggy")
 		response := httptest.NewRecorder()
 
-		store := &StubPlayerStore{}
-		playerServer := &PlayerServer{store: store}
+		store := initPlayersStore()
+		playerServer := &PlayerServer{Store: store}
 		playerServer.ServeHTTP(response, request)
 
 		assertResponseReply(t, response.Body.String(), "10")
@@ -38,8 +38,8 @@ func TestGETPlayers(t *testing.T) {
 		request, _ := newGetScoreRequest("")
 		response := httptest.NewRecorder()
 
-		store := &StubPlayerStore{}
-		playerServer := &PlayerServer{store: store}
+		store := initPlayersStore()
+		playerServer := &PlayerServer{Store: store}
 		playerServer.ServeHTTP(response, request)
 
 		assertResponseReply(t, response.Body.String(), "")
@@ -58,6 +58,21 @@ func newGetScoreRequest(player string) (*http.Request, error) {
 	return http.NewRequest(http.MethodGet, path, nil)
 }
 
-func (s *StubPlayerStore) GetPlayerScore(name string) int {
-	return 0
+func (s *StubPlayerStore) GetPlayerScore(name string) (int, error) {
+
+	if score, ok := s.score[name]; ok {
+		return score, nil
+	}
+	return 0, ERRPLAYERNOTFOUND
+}
+
+func initPlayersStore() *StubPlayerStore {
+	store := StubPlayerStore{
+		map[string]int{
+			"Mo":    20,
+			"Ziggy": 10,
+		},
+	}
+
+	return &store
 }

@@ -2,17 +2,22 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 )
 
 type PlayerStore interface {
-	GetPlayerScore(name string) int
+	GetPlayerScore(name string) (int, error)
 }
 
 type PlayerServer struct {
-	store PlayerStore
+	Store PlayerStore
 }
+
+var (
+	ERRPLAYERNOTFOUND = errors.New("Player not found")
+)
 
 func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/" {
@@ -21,11 +26,18 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	player := r.URL.Path[len("/players/"):] // extract player name from the GET Path
 
-	score := p.store.GetPlayerScore(player)
-	fmt.Fprintf(w, string(score))
+	score, err := p.Store.GetPlayerScore(player)
+	fmt.Printf("player: %s. score: %d. path: %s. err: %v\n", player, score, r.URL.Path, err)
+	if err == nil {
+		fmt.Fprintf(w, "%d", score)
+		return
+	}
+
+	fmt.Fprintf(w, "")
+
 }
 
-func (p *PlayerServer) GetPlayerScore(name string) string {
+/*func (p *PlayerServer) GetPlayerScore(name string) string {
 	switch name {
 	case "Mo":
 		return "20"
@@ -34,4 +46,4 @@ func (p *PlayerServer) GetPlayerScore(name string) string {
 	default:
 		return ""
 	}
-}
+}*/
