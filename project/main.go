@@ -12,8 +12,9 @@ var (
 )
 
 func main() {
-	handler := http.HandlerFunc(server.PlayerServer)
-	err := http.ListenAndServe(ADDR, handler)
+	//handler := http.HandlerFunc(server.PlayerServer)
+	server := &server.PlayerServer{}
+	err := http.ListenAndServe(ADDR, server)
 	if err != nil {
 		log.Fatalf("Couldn't listen to port %v. Err: %v", ADDR, err)
 	}
