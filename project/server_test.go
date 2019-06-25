@@ -17,10 +17,7 @@ func TestGETPlayers(t *testing.T) {
 
 		want := "20"
 
-		if got != want {
-			t.Errorf("Got '%s' want '%s'", got, want)
-		}
-
+		assertScore(t, got, want)
 	})
 
 	t.Run("Return Ziggy's score", func(t *testing.T) {
@@ -31,8 +28,13 @@ func TestGETPlayers(t *testing.T) {
 		PlayerServer(response, request)
 
 		got := response.Body.String()
-		if got != want {
-			t.Errorf("got '%s' want '%s'", got, want)
-		}
+		assertScore(t, got, want)
 	})
+}
+
+func assertScore(t *testing.T, got, want string) {
+	t.Helper()
+	if got != want {
+		t.Errorf("Got '%s' want '%s'", got, want)
+	}
 }
