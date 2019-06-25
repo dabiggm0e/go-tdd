@@ -7,14 +7,18 @@ import (
 )
 
 func PlayerServer(w http.ResponseWriter, r *http.Request) {
-
 	player := r.URL.Path[len("/players/"):] // extract player name from the GET Path
+	score := getScore(player)
+	fmt.Fprintf(w, score)
+}
 
+func getScore(player string) string {
 	switch player {
 	case "Mo":
-		fmt.Fprintf(w, "20")
+		return "20"
 	case "Ziggy":
-		fmt.Fprintf(w, "10")
+		return "10"
+	default:
+		return ""
 	}
-
 }
