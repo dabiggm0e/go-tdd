@@ -1,5 +1,5 @@
 //https://quii.gitbook.io/learn-go-with-tests/build-an-application/http-server
-package main
+package server
 
 import (
 	"net/http"
@@ -27,6 +27,16 @@ func TestGETPlayers(t *testing.T) {
 
 		PlayerServer(response, request)
 
+		got := response.Body.String()
+		assertScore(t, got, want)
+	})
+
+	t.Run("Call index / returns empty response", func(t *testing.T) {
+		request, _ := http.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+
+		want := ""
+		PlayerServer(response, request)
 		got := response.Body.String()
 		assertScore(t, got, want)
 	})

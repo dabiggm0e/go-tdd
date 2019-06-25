@@ -1,5 +1,5 @@
 //https://quii.gitbook.io/learn-go-with-tests/build-an-application/http-server
-package main
+package server
 
 import (
 	"fmt"
@@ -7,6 +7,10 @@ import (
 )
 
 func PlayerServer(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" {
+		return
+	}
+
 	player := r.URL.Path[len("/players/"):] // extract player name from the GET Path
 	score := getScore(player)
 	fmt.Fprintf(w, score)
