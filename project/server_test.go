@@ -1,5 +1,5 @@
 //https://quii.gitbook.io/learn-go-with-tests/build-an-application/http-server
-package gameserver
+package main
 
 import (
 	"net/http"
@@ -14,6 +14,7 @@ func TestGETPlayers(t *testing.T) {
 
 		PlayerServer(response, request)
 		got := response.Body.String()
+
 		want := "20"
 
 		if got != want {
