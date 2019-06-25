@@ -22,4 +22,17 @@ func TestGETPlayers(t *testing.T) {
 		}
 
 	})
+
+	t.Run("Return Ziggy's score", func(t *testing.T) {
+		request, _ := http.NewRequest(http.MethodGet, "/Players/Ziggy", nil)
+		response := httptest.NewRecorder()
+		want := "10"
+
+		PlayerServer(response, request)
+
+		got := response.Body.String()
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
 }
