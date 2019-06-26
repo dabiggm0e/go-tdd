@@ -1,15 +1,29 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	//"github.com/dabiggm0e/go-tdd/project/server"
+)
 
-	"github.com/dabiggm0e/go-tdd/project/server"
+//flags
+var (
+	verbose bool
 )
 
 var (
 	ADDR = ":2222"
 )
+
+func init() {
+	flag.BoolVar(&verbose, "verbose", false, "Show verbose messages")
+	flag.Parse()
+}
+
+func IsVerbose() bool {
+	return verbose
+}
 
 type InMemoryPlayerStore struct {
 }
@@ -21,7 +35,7 @@ func (i *InMemoryPlayerStore) GetPlayerScore(name string) (int, error) {
 	case "Ziggy":
 		return 10, nil
 	default:
-		return 0, server.ERRPLAYERNOTFOUND
+		return 0, ERRPLAYERNOTFOUND
 	}
 
 }
@@ -30,7 +44,7 @@ func main() {
 	//handler := http.HandlerFunc(server.PlayerServer)
 	//store := &InMemoryPlayerStore{}
 
-	server := &server.PlayerServer{&InMemoryPlayerStore{}}
+	server := &PlayerServer{&InMemoryPlayerStore{}}
 
 	err := http.ListenAndServe(ADDR, server)
 	if err != nil {

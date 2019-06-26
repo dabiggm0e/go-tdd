@@ -1,5 +1,5 @@
 //https://quii.gitbook.io/learn-go-with-tests/build-an-application/http-server
-package server
+package main
 
 import (
 	"errors"
@@ -27,7 +27,10 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	player := r.URL.Path[len("/players/"):] // extract player name from the GET Path
 
 	score, err := p.Store.GetPlayerScore(player)
-	fmt.Printf("player: %s. score: %d. path: %s. err: %v\n", player, score, r.URL.Path, err)
+	if IsVerbose() {
+		fmt.Printf("player: %s. score: %d. path: %s. err: %v\n", player, score, r.URL.Path, err)
+	}
+
 	if err == nil {
 		fmt.Fprintf(w, "%d", score)
 		return
