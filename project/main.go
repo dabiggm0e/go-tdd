@@ -37,7 +37,10 @@ func (i *InMemoryPlayerStore) GetPlayerScore(name string) (int, error) {
 	default:
 		return 0, ERRPLAYERNOTFOUND
 	}
+}
 
+func (i *InMemoryPlayerStore) RecordPlayerScore(name string) (int, error) {
+	return 21, nil
 }
 
 func main() {

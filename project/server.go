@@ -9,6 +9,7 @@ import (
 
 type PlayerStore interface {
 	GetPlayerScore(name string) (int, error)
+	RecordPlayerScore(name string) (int, error)
 }
 
 type PlayerServer struct {
@@ -20,20 +21,28 @@ var (
 )
 
 func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var score int
+	var err error
+
 	if r.URL.Path == "/" {
 		return
 	}
-
 	player := r.URL.Path[len("/players/"):] // extract player name from the GET Path
 
-	score, err := p.store.GetPlayerScore(player)
-	if IsVerbose() {
-		fmt.Printf("player: %s. score: %d. path: %s. err: %v\n", player, score, r.URL.Path, err)
+	switch r.Method {
+
+	case "GET":
+		score, err = p.store.GetPlayerScore(player)
+		if err == ERRPLAYERNOTFOUND {
+			w.WriteHeader(http.StatusNotFound)
+		}
+
+	case "POST":
+		score, err = p.store.RecordPlayerScore(player)
 	}
 
-	if err == ERRPLAYERNOTFOUND {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "%d", score)
+	if IsVerbose() {
+		fmt.Printf("player: %s. score: %d. path: %s. err: %v\n", player, score, r.URL.Path, err)
 	}
 
 	fmt.Fprintf(w, "%d", score)

@@ -20,6 +20,7 @@ func TestGETPlayers(t *testing.T) {
 		playerServer := &PlayerServer{store: store}
 		playerServer.ServeHTTP(response, request)
 
+		assertStatusCode(t, response.Code, http.StatusOK)
 		assertResponseReply(t, response.Body.String(), "20")
 	})
 
@@ -31,6 +32,7 @@ func TestGETPlayers(t *testing.T) {
 		playerServer := &PlayerServer{store: store}
 		playerServer.ServeHTTP(response, request)
 
+		assertStatusCode(t, response.Code, http.StatusOK)
 		assertResponseReply(t, response.Body.String(), "10")
 	})
 
@@ -46,9 +48,27 @@ func TestGETPlayers(t *testing.T) {
 		want := http.StatusNotFound
 		got := response.Code
 
+		assertStatusCode(t, got, want)
+	})
+
+	t.Run("Recording a score for player Mo", func(t *testing.T) {
+		store := initPlayersStore()
+		player := "Mo"
+		request, _ := newPostScoreRequest(player)
+		response := httptest.NewRecorder()
+
+		want := store.score[player] + 1
+		playerServer := &PlayerServer{store: store}
+		playerServer.ServeHTTP(response, request)
+
+		got := store.score[player]
+
+		assertStatusCode(t, response.Code, http.StatusOK)
 		if got != want {
-			t.Errorf("Got HTTP Status %d, want %d ", got, want)
+			t.Errorf("%s: Got score %d, want %d", player, got, want)
 		}
+		assertResponseReply(t, response.Body.String(), "21")
+
 	})
 }
 
@@ -59,9 +79,21 @@ func assertResponseReply(t *testing.T, got, want string) {
 	}
 }
 
+func assertStatusCode(t *testing.T, got, want int) {
+	t.Helper()
+	if got != want {
+		t.Errorf("Got response code %d, want %d", got, want)
+	}
+}
+
 func newGetScoreRequest(player string) (*http.Request, error) {
 	path := fmt.Sprintf("/players/%s", player)
 	return http.NewRequest(http.MethodGet, path, nil)
+}
+
+func newPostScoreRequest(player string) (*http.Request, error) {
+	path := fmt.Sprintf("/players/%s", player)
+	return http.NewRequest(http.MethodPost, path, nil)
 }
 
 func (s *StubPlayerStore) GetPlayerScore(name string) (int, error) {
@@ -70,6 +102,11 @@ func (s *StubPlayerStore) GetPlayerScore(name string) (int, error) {
 		return score, nil
 	}
 	return 0, ERRPLAYERNOTFOUND
+}
+
+func (s *StubPlayerStore) RecordPlayerScore(name string) (int, error) {
+	s.score[name]++
+	return s.score[name], nil
 }
 
 func initPlayersStore() *StubPlayerStore {
