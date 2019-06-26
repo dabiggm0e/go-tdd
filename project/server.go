@@ -12,7 +12,7 @@ type PlayerStore interface {
 }
 
 type PlayerServer struct {
-	Store PlayerStore
+	store PlayerStore
 }
 
 var (
@@ -26,17 +26,17 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	player := r.URL.Path[len("/players/"):] // extract player name from the GET Path
 
-	score, err := p.Store.GetPlayerScore(player)
+	score, err := p.store.GetPlayerScore(player)
 	if IsVerbose() {
 		fmt.Printf("player: %s. score: %d. path: %s. err: %v\n", player, score, r.URL.Path, err)
 	}
 
-	if err == nil {
-		fmt.Fprintf(w, "%d", score)
+	if err == ERRPLAYERNOTFOUND {
+		http.NotFound(w, r)
 		return
 	}
 
-	fmt.Fprintf(w, "")
+	fmt.Fprintf(w, "%d", score)
 
 }
 
