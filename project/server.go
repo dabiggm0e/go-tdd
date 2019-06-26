@@ -32,8 +32,8 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err == ERRPLAYERNOTFOUND {
-		http.NotFound(w, r)
-		return
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, "%d", score)
 	}
 
 	fmt.Fprintf(w, "%d", score)
