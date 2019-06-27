@@ -3,9 +3,13 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
+
+	_ "github.com/lib/pq"
 	//"github.com/dabiggm0e/go-tdd/project/server"
 )
 
@@ -14,8 +18,13 @@ var (
 	verbose bool
 )
 
-var (
-	ADDR = ":2222"
+const (
+	ADDR   = ":2222"
+	DBHOST = "localhost"
+	DBPORT = 5432
+	DBUSER = "postgres"
+	DBPASS = "admin"
+	DBNAME = "go-tdd"
 )
 
 func init() {
@@ -26,6 +35,38 @@ func init() {
 func IsVerbose() bool {
 	return verbose
 }
+
+type PostgresPlayerStore struct {
+	store *sql.DB
+}
+
+func NewPostgresPlayerStore() *PostgresPlayerStore {
+	pSqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		DBHOST, DBPORT, DBUSER, DBPASS, DBNAME)
+
+	db, err := sql.Open("postgres", pSqlInfo)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	return &PostgresPlayerStore{store: db}
+}
+
+func (p *PostgresPlayerStore) Teardown() {
+	p.store.Close()
+}
+
+func (p *PostgresPlayerStore) GetPlayerScore(name string) (int, error) {
+	return 0, nil
+}
+func (p *PostgresPlayerStore) RecordWin(name string) {}
 
 type InMemoryPlayerStore struct {
 	store map[string]int
@@ -49,6 +90,10 @@ func (i *InMemoryPlayerStore) RecordWin(name string) {
 func main() {
 
 	server := &PlayerServer{NewInMemoryPlayerStore()}
+	store := NewPostgresPlayerStore()
+	defer store.Teardown()
+	pserver := &PlayerServer{store: store}
+	_ = pserver
 
 	err := http.ListenAndServe(ADDR, server)
 	if err != nil {

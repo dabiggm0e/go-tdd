@@ -84,7 +84,7 @@ func TestStoreWins(t *testing.T) {
 ////// Integration Tests
 ///////////////////////////
 
-func TestRecordWinsAndRetrieveScore(t *testing.T) {
+func TestInMemoryStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	store := NewInMemoryPlayerStore()
 
 	server := &PlayerServer{store: store}
@@ -100,6 +100,11 @@ func TestRecordWinsAndRetrieveScore(t *testing.T) {
 	assertStatusCode(t, response.Code, http.StatusOK)
 	assertResponseReply(t, response.Body.String(), "3")
 
+}
+
+func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
+	store := NewPostgresPlayerStore()
+	defer store.Teardown()
 }
 
 ////////////
