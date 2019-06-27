@@ -28,28 +28,27 @@ func IsVerbose() bool {
 }
 
 type InMemoryPlayerStore struct {
+	store map[string]int
 }
 
-func (i *InMemoryPlayerStore) GetPlayerScore(name string) (int, error) {
-	switch name {
-	case "Mo":
-		return 20, nil
-	case "Ziggy":
-		return 10, nil
-	default:
-		return 0, ERRPLAYERNOTFOUND
+func NewInMemoryPlayerStore() *InMemoryPlayerStore {
+	return &InMemoryPlayerStore{map[string]int{}}
+}
+
+func (i *InMemoryPlayerStore) GetPlayerScore(name string) (int, error) { //TODO implement inmemory store
+	if score, ok := i.store[name]; ok {
+		return score, nil
 	}
+	return 0, ERRPLAYERNOTFOUND
 }
 
 func (i *InMemoryPlayerStore) RecordWin(name string) {
-	return //21, nil //TODO implement a store
+	i.store[name]++
 }
 
 func main() {
-	//handler := http.HandlerFunc(server.PlayerServer)
-	//store := &InMemoryPlayerStore{}
 
-	server := &PlayerServer{&InMemoryPlayerStore{}}
+	server := &PlayerServer{NewInMemoryPlayerStore()}
 
 	err := http.ListenAndServe(ADDR, server)
 	if err != nil {

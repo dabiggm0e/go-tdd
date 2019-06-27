@@ -85,7 +85,7 @@ func TestStoreWins(t *testing.T) {
 ///////////////////////////
 
 func TestRecordWinsAndRetrieveScore(t *testing.T) {
-	store := &InMemoryPlayerStore{}
+	store := NewInMemoryPlayerStore()
 
 	server := &PlayerServer{store: store}
 	player := "Luffy"
