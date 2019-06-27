@@ -13,9 +13,12 @@ type StubPlayerStore struct {
 	winCalls []string
 }
 
+///////////////////////////
+//// Unit Tests
+///////////////////////////
 func TestGETPlayers(t *testing.T) {
 	t.Run("Getting Mo's score", func(t *testing.T) {
-		request, _ := newGetScoreRequest("Mo")
+		request := newGetScoreRequest("Mo")
 		response := httptest.NewRecorder()
 		store := initPlayersStore()
 		playerServer := &PlayerServer{store: store}
@@ -26,7 +29,7 @@ func TestGETPlayers(t *testing.T) {
 	})
 
 	t.Run("Return Ziggy's score", func(t *testing.T) {
-		request, _ := newGetScoreRequest("Ziggy")
+		request := newGetScoreRequest("Ziggy")
 		response := httptest.NewRecorder()
 
 		store := initPlayersStore()
@@ -38,7 +41,7 @@ func TestGETPlayers(t *testing.T) {
 	})
 
 	t.Run("Return 404 on not found player", func(t *testing.T) {
-		request, _ := newGetScoreRequest("JOHNDOE")
+		request := newGetScoreRequest("JOHNDOE")
 		response := httptest.NewRecorder()
 
 		store := initPlayersStore()
@@ -59,7 +62,7 @@ func TestStoreWins(t *testing.T) {
 	t.Run("It records a win when POST", func(t *testing.T) {
 		store := initPlayersStore()
 		player := "JOHNDOE"
-		request, _ := newPostScoreRequest(player)
+		request := newPostScoreRequest(player)
 		response := httptest.NewRecorder()
 
 		playerServer := &PlayerServer{store: store}
@@ -77,6 +80,31 @@ func TestStoreWins(t *testing.T) {
 	})
 }
 
+///////////////////////////
+////// Integration Tests
+///////////////////////////
+
+func TestRecordWinsAndRetrieveScore(t *testing.T) {
+	store := &InMemoryPlayerStore{}
+
+	server := &PlayerServer{store: store}
+	player := "Luffy"
+
+	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
+
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, newGetScoreRequest(player))
+
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseReply(t, response.Body.String(), "3")
+
+}
+
+////////////
+/// Assertions helper functions
+///////////
 func assertResponseReply(t *testing.T, got, want string) {
 	t.Helper()
 	if got != want {
@@ -91,16 +119,24 @@ func assertStatusCode(t *testing.T, got, want int) {
 	}
 }
 
-func newGetScoreRequest(player string) (*http.Request, error) {
+//////////////
+/// helper functions
+///////////////
+func newGetScoreRequest(player string) *http.Request {
 	path := fmt.Sprintf("/players/%s", player)
-	return http.NewRequest(http.MethodGet, path, nil)
+	request, _ := http.NewRequest(http.MethodGet, path, nil)
+	return request
 }
 
-func newPostScoreRequest(player string) (*http.Request, error) {
+func newPostScoreRequest(player string) *http.Request {
 	path := fmt.Sprintf("/players/%s", player)
-	return http.NewRequest(http.MethodPost, path, nil)
+	request, _ := http.NewRequest(http.MethodPost, path, nil)
+	return request
 }
 
+//////////////////
+//// stub implementation
+//////////////////
 func (s *StubPlayerStore) GetPlayerScore(name string) (int, error) {
 
 	if score, ok := s.score[name]; ok {
