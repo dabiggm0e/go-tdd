@@ -39,8 +39,8 @@ func (i *InMemoryPlayerStore) GetPlayerScore(name string) (int, error) {
 	}
 }
 
-func (i *InMemoryPlayerStore) RecordPlayerScore(name string) (int, error) {
-	return 21, nil //TODO implement a store
+func (i *InMemoryPlayerStore) RecordWin(name string) {
+	return //21, nil //TODO implement a store
 }
 
 func main() {

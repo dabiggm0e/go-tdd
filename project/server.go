@@ -9,7 +9,7 @@ import (
 
 type PlayerStore interface {
 	GetPlayerScore(name string) (int, error)
-	RecordPlayerScore(name string) (int, error)
+	RecordWin(name string)
 }
 
 type PlayerServer struct {
@@ -21,39 +21,30 @@ var (
 )
 
 func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var score int
-	var err error
-
-	player := r.URL.Path[len("/players/"):] // extract player name from the GET Path
-
+	player := getPlayerName(r)
 	switch r.Method {
-
 	case "GET":
-		score, err = p.store.GetPlayerScore(player)
-		if err == ERRPLAYERNOTFOUND {
-			w.WriteHeader(http.StatusNotFound)
-		}
+		p.showScore(w, player)
 
 	case "POST":
-		score, err = p.store.RecordPlayerScore(player)
-		w.WriteHeader(http.StatusAccepted)
+		p.processWin(w, player)
 	}
-
-	if IsVerbose() {
-		fmt.Printf("player: %s. score: %d. path: %s. err: %v\n", player, score, r.URL.Path, err)
-	}
-
-	fmt.Fprintf(w, "%d", score)
 
 }
 
-/*func (p *PlayerServer) GetPlayerScore(name string) string {
-	switch name {
-	case "Mo":
-		return "20"
-	case "Ziggy":
-		return "10"
-	default:
-		return ""
+func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
+	p.store.RecordWin(player)
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
+	score, err := p.store.GetPlayerScore(player)
+	if err == ERRPLAYERNOTFOUND {
+		w.WriteHeader(http.StatusNotFound)
 	}
-}*/
+	fmt.Fprintf(w, "%d", score)
+}
+
+func getPlayerName(r *http.Request) string {
+	return r.URL.Path[len("/players/"):] // extract player name from the GET Path
+}

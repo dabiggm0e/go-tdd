@@ -9,7 +9,8 @@ import (
 )
 
 type StubPlayerStore struct {
-	score map[string]int
+	score    map[string]int
+	winCalls []string
 }
 
 func TestGETPlayers(t *testing.T) {
@@ -51,44 +52,28 @@ func TestGETPlayers(t *testing.T) {
 		assertStatusCode(t, got, want)
 	})
 
-	t.Run("Recording a score for player Mo", func(t *testing.T) {
-		store := initPlayersStore()
-		player := "Mo"
-		request, _ := newPostScoreRequest(player)
-		response := httptest.NewRecorder()
+}
 
-		want := store.score[player] + 1
-		playerServer := &PlayerServer{store: store}
-		playerServer.ServeHTTP(response, request)
+func TestStoreWins(t *testing.T) {
 
-		got := store.score[player]
-
-		assertStatusCode(t, response.Code, http.StatusAccepted)
-		if got != want {
-			t.Errorf("%s: Got score %d, want %d", player, got, want)
-		}
-		assertResponseReply(t, response.Body.String(), "21")
-
-	})
-
-	t.Run("It returns accepted on POST for unknown player", func(t *testing.T) {
+	t.Run("It records a win when POST", func(t *testing.T) {
 		store := initPlayersStore()
 		player := "JOHNDOE"
 		request, _ := newPostScoreRequest(player)
 		response := httptest.NewRecorder()
 
-		want := store.score[player] + 1
 		playerServer := &PlayerServer{store: store}
 		playerServer.ServeHTTP(response, request)
 
-		got := store.score[player]
-
 		assertStatusCode(t, response.Code, http.StatusAccepted)
-		if got != want {
-			t.Errorf("%s: Got score %d, want %d", player, got, want)
-		}
-		assertResponseReply(t, response.Body.String(), "1")
 
+		if len(store.winCalls) != 1 {
+			t.Fatalf("Expecting %d calls to RecordWin, got %d", 1, len(store.winCalls))
+		}
+
+		if store.winCalls[0] != player {
+			t.Errorf("did not store the correct winner. Got %s, want %s", store.winCalls[0], player)
+		}
 	})
 }
 
@@ -124,14 +109,15 @@ func (s *StubPlayerStore) GetPlayerScore(name string) (int, error) {
 	return 0, ERRPLAYERNOTFOUND
 }
 
-func (s *StubPlayerStore) RecordPlayerScore(name string) (int, error) {
-	s.score[name]++
-	return s.score[name], nil
+func (s *StubPlayerStore) RecordWin(name string) {
+	//s.score[name]++
+	//return s.score[name], nil
+	s.winCalls = append(s.winCalls, name)
 }
 
 func initPlayersStore() *StubPlayerStore {
 	store := StubPlayerStore{
-		map[string]int{
+		score: map[string]int{
 			"Mo":    20,
 			"Ziggy": 10,
 		},
