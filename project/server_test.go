@@ -71,9 +71,9 @@ func TestGETPlayers(t *testing.T) {
 
 	})
 
-	t.Run("It returns accepted on POST", func(t *testing.T) {
+	t.Run("It returns accepted on POST for unknown player", func(t *testing.T) {
 		store := initPlayersStore()
-		player := "Mo"
+		player := "JOHNDOE"
 		request, _ := newPostScoreRequest(player)
 		response := httptest.NewRecorder()
 
@@ -87,7 +87,7 @@ func TestGETPlayers(t *testing.T) {
 		if got != want {
 			t.Errorf("%s: Got score %d, want %d", player, got, want)
 		}
-		assertResponseReply(t, response.Body.String(), "21")
+		assertResponseReply(t, response.Body.String(), "1")
 
 	})
 }
