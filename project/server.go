@@ -24,9 +24,6 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var score int
 	var err error
 
-	if r.URL.Path == "/" {
-		return
-	}
 	player := r.URL.Path[len("/players/"):] // extract player name from the GET Path
 
 	switch r.Method {
@@ -39,6 +36,7 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	case "POST":
 		score, err = p.store.RecordPlayerScore(player)
+		w.WriteHeader(http.StatusAccepted)
 	}
 
 	if IsVerbose() {

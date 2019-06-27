@@ -63,7 +63,27 @@ func TestGETPlayers(t *testing.T) {
 
 		got := store.score[player]
 
-		assertStatusCode(t, response.Code, http.StatusOK)
+		assertStatusCode(t, response.Code, http.StatusAccepted)
+		if got != want {
+			t.Errorf("%s: Got score %d, want %d", player, got, want)
+		}
+		assertResponseReply(t, response.Body.String(), "21")
+
+	})
+
+	t.Run("It returns accepted on POST", func(t *testing.T) {
+		store := initPlayersStore()
+		player := "Mo"
+		request, _ := newPostScoreRequest(player)
+		response := httptest.NewRecorder()
+
+		want := store.score[player] + 1
+		playerServer := &PlayerServer{store: store}
+		playerServer.ServeHTTP(response, request)
+
+		got := store.score[player]
+
+		assertStatusCode(t, response.Code, http.StatusAccepted)
 		if got != want {
 			t.Errorf("%s: Got score %d, want %d", player, got, want)
 		}
