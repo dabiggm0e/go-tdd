@@ -19,7 +19,7 @@ var (
 )
 
 const (
-	ADDR   = ":2222"
+	ADDR   = ":1111"
 	DBHOST = "localhost"
 	DBPORT = 5432
 	DBUSER = "postgres"
@@ -64,8 +64,43 @@ func (p *PostgresPlayerStore) Teardown() {
 }
 
 func (p *PostgresPlayerStore) GetPlayerScore(name string) (int, error) {
-	return 0, nil
+	id, err := p.getPlayerIdSql(name)
+
+	if err != nil {
+		return 0, nil
+	}
+
+	var score int
+	getPlayerScoreSql := `SELECT "score" FROM scores WHERE id=$1;`
+	row := p.store.QueryRow(getPlayerScoreSql, id)
+
+	switch err := row.Scan(&score); err {
+	case sql.ErrNoRows:
+		return 0, ERRPLAYERNOTFOUND
+	case nil:
+		return score, nil
+	default:
+		return 0, err
+	}
+
 }
+
+func (p *PostgresPlayerStore) getPlayerIdSql(name string) (int, error) {
+	var id int
+	getUserIdSql := `SELECT "id" FROM players WHERE name=$1;`
+	row := p.store.QueryRow(getUserIdSql, name)
+
+	switch err := row.Scan(&id); err {
+	case sql.ErrNoRows:
+		return 0, ERRPLAYERNOTFOUND
+	case nil:
+		return id, nil
+	default:
+		return 0, err
+	}
+
+}
+
 func (p *PostgresPlayerStore) RecordWin(name string) {}
 
 type InMemoryPlayerStore struct {
@@ -89,13 +124,12 @@ func (i *InMemoryPlayerStore) RecordWin(name string) {
 
 func main() {
 
-	server := &PlayerServer{NewInMemoryPlayerStore()}
+	//server := &PlayerServer{NewInMemoryPlayerStore()}
 	store := NewPostgresPlayerStore()
 	defer store.Teardown()
 	pserver := &PlayerServer{store: store}
-	_ = pserver
 
-	err := http.ListenAndServe(ADDR, server)
+	err := http.ListenAndServe(ADDR, pserver)
 	if err != nil {
 		log.Fatalf("Couldn't listen to port %v. Err: %v", ADDR, err)
 	}

@@ -105,6 +105,18 @@ func TestInMemoryStoreRecordWinsAndRetrieveScore(t *testing.T) {
 func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	store := NewPostgresPlayerStore()
 	defer store.Teardown()
+	server := &PlayerServer{store: store}
+	player := "Mo"
+
+	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
+
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, newGetScoreRequest(player))
+
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseReply(t, response.Body.String(), "3")
 }
 
 ////////////
