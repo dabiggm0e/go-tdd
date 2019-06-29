@@ -153,6 +153,7 @@ func (i *InMemoryPlayerStore) RecordWin(name string) error {
 func main() {
 
 	//server := &PlayerServer{NewInMemoryPlayerStore()}
+	//// TODO: implement a redis inmemory database
 	store := NewPostgresPlayerStore()
 	defer store.Teardown()
 	pserver := &PlayerServer{store: store}

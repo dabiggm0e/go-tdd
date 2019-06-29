@@ -55,19 +55,43 @@ func TestGETPlayers(t *testing.T) {
 		assertStatusCode(t, got, want)
 	})
 
+}
+
+func TestPostgresGetPlayer(t *testing.T) {
 	t.Run("PostgresPlayerStore: Return 404 on not found player", func(t *testing.T) {
 		request := newGetScoreRequest("JOHNDOE")
 		response := httptest.NewRecorder()
 
 		store := NewPostgresPlayerStore()
-		playerServer := &PlayerServer{store: store}
+		defer store.Teardown()
+		clearPostgresStore(t, store)
 
+		playerServer := &PlayerServer{store: store}
 		playerServer.ServeHTTP(response, request)
 
 		want := http.StatusNotFound
 		got := response.Code
 
 		assertStatusCode(t, got, want)
+	})
+
+	t.Run("Getting Mo's score", func(t *testing.T) {
+		player := "Mo"
+		response := httptest.NewRecorder()
+
+		store := NewPostgresPlayerStore()
+		defer store.Teardown()
+		clearPostgresStore(t, store)
+
+		playerServer := &PlayerServer{store: store}
+		playerServer.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
+		playerServer.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
+		playerServer.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
+
+		playerServer.ServeHTTP(response, newGetScoreRequest(player))
+
+		assertStatusCode(t, response.Code, http.StatusOK)
+		assertResponseReply(t, response.Body.String(), "3")
 	})
 
 }
@@ -93,6 +117,21 @@ func TestStoreWins(t *testing.T) {
 			t.Errorf("did not store the correct winner. Got %s, want %s", store.winCalls[0], player)
 		}
 	})
+}
+
+func TestPostgresStoreWin(t *testing.T) {
+	player := "Ziggy"
+
+	store := NewPostgresPlayerStore()
+	defer store.Teardown()
+	clearPostgresStore(t, store)
+
+	playerServer := &PlayerServer{store: store}
+
+	response := httptest.NewRecorder()
+	playerServer.ServeHTTP(response, newPostScoreRequest(player))
+
+	assertStatusCode(t, response.Code, http.StatusAccepted)
 }
 
 ///////////////////////////
