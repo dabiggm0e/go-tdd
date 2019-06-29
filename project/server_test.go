@@ -55,6 +55,21 @@ func TestGETPlayers(t *testing.T) {
 		assertStatusCode(t, got, want)
 	})
 
+	t.Run("PostgresPlayerStore: Return 404 on not found player", func(t *testing.T) {
+		request := newGetScoreRequest("JOHNDOE")
+		response := httptest.NewRecorder()
+
+		store := NewPostgresPlayerStore()
+		playerServer := &PlayerServer{store: store}
+
+		playerServer.ServeHTTP(response, request)
+
+		want := http.StatusNotFound
+		got := response.Code
+
+		assertStatusCode(t, got, want)
+	})
+
 }
 
 func TestStoreWins(t *testing.T) {

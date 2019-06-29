@@ -67,7 +67,7 @@ func (p *PostgresPlayerStore) GetPlayerScore(name string) (int, error) {
 	id, err := p.getPlayerIdSql(name)
 
 	if err != nil {
-		return 0, nil
+		return 0, ERRPLAYERNOTFOUND
 	}
 
 	var score int
@@ -127,10 +127,7 @@ func (p *PostgresPlayerStore) RecordWin(name string) error {
 
 	_, err = p.store.Exec(recordWinSql, id)
 
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 type InMemoryPlayerStore struct {

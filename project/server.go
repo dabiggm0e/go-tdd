@@ -45,7 +45,7 @@ func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
 
 func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
 	score, err := p.store.GetPlayerScore(player)
-	if err == ERRPLAYERNOTFOUND {
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
 	fmt.Fprintf(w, "%d", score)
