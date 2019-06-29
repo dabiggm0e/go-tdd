@@ -105,6 +105,7 @@ func TestInMemoryStoreRecordWinsAndRetrieveScore(t *testing.T) {
 func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	store := NewPostgresPlayerStore()
 	defer store.Teardown()
+	clearPostgresStore(t, store)
 	server := &PlayerServer{store: store}
 	player := "Mo"
 
@@ -162,10 +163,11 @@ func (s *StubPlayerStore) GetPlayerScore(name string) (int, error) {
 	return 0, ERRPLAYERNOTFOUND
 }
 
-func (s *StubPlayerStore) RecordWin(name string) {
+func (s *StubPlayerStore) RecordWin(name string) error {
 	//s.score[name]++
 	//return s.score[name], nil
 	s.winCalls = append(s.winCalls, name)
+	return nil
 }
 
 func initPlayersStore() *StubPlayerStore {
@@ -177,4 +179,12 @@ func initPlayersStore() *StubPlayerStore {
 	}
 
 	return &store
+}
+
+func clearPostgresStore(t *testing.T, p *PostgresPlayerStore) {
+	truncateSql := "TRUNCATE scores; TRUNCATE players"
+	_, err := p.store.Exec(truncateSql)
+	if err != nil {
+		t.Fatalf("Unable to truncate the store. Err: %v", err)
+	}
 }

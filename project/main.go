@@ -101,7 +101,37 @@ func (p *PostgresPlayerStore) getPlayerIdSql(name string) (int, error) {
 
 }
 
-func (p *PostgresPlayerStore) RecordWin(name string) {}
+func (p *PostgresPlayerStore) RecordWin(name string) error {
+	insertPlayerSql := `INSERT INTO public.players(name) VALUES($1)
+	ON CONFLICT DO NOTHING;`
+
+	_, err := p.store.Exec(insertPlayerSql, name)
+	if err != nil {
+		return err
+	}
+
+	id := 0
+	getPlayerIdSql := `SELECT id from public.players WHERE name=$1`
+	p.store.QueryRow(getPlayerIdSql, name).Scan(&id)
+
+	if err != nil || id == 0 {
+		return err
+	}
+
+	recordWinSql := `INSERT INTO public.scores(id, score)
+											VALUES ($1, 1)
+									ON CONFLICT ON CONSTRAINT scores_pkey
+									DO
+									UPDATE
+										SET score=scores.score+1`
+
+	_, err = p.store.Exec(recordWinSql, id)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 type InMemoryPlayerStore struct {
 	store map[string]int
@@ -118,8 +148,9 @@ func (i *InMemoryPlayerStore) GetPlayerScore(name string) (int, error) { //TODO 
 	return 0, ERRPLAYERNOTFOUND
 }
 
-func (i *InMemoryPlayerStore) RecordWin(name string) {
+func (i *InMemoryPlayerStore) RecordWin(name string) error {
 	i.store[name]++
+	return nil
 }
 
 func main() {

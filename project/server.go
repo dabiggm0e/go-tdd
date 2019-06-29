@@ -9,7 +9,7 @@ import (
 
 type PlayerStore interface {
 	GetPlayerScore(name string) (int, error)
-	RecordWin(name string)
+	RecordWin(name string) error
 }
 
 type PlayerServer struct {
@@ -33,8 +33,14 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
-	p.store.RecordWin(player)
-	w.WriteHeader(http.StatusAccepted)
+	err := p.store.RecordWin(player)
+	switch err {
+	case nil:
+		w.WriteHeader(http.StatusAccepted)
+	default:
+		w.WriteHeader(http.StatusNotFound)
+	}
+
 }
 
 func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
