@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 type PlayerStore interface {
@@ -32,6 +33,16 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (p *PlayerServer) processGetRequests(w http.ResponseWriter, r *http.Request) {
+	//endpoint:= strings.Spli
+	switch r.URL.Path {
+	case "/players":
+		player := getPlayerName(r)
+		p.showScore(w, player)
+	}
+
+}
+
 func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
 	err := p.store.RecordWin(player)
 	switch err {
@@ -52,5 +63,13 @@ func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
 }
 
 func getPlayerName(r *http.Request) string {
-	return r.URL.Path[len("/players/"):] // extract player name from the GET Path
+
+	tokens := strings.SplitN(r.URL.Path, "/", -1)
+
+	if len(tokens) > 2 { // example: "/players/Mo" >> ["", "players" "Mo"]
+		return tokens[2]
+	}
+
+	return ""
+
 }
