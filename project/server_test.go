@@ -21,7 +21,7 @@ func TestGETPlayers(t *testing.T) {
 		request := newGetScoreRequest("Mo")
 		response := httptest.NewRecorder()
 		store := initPlayersStore()
-		playerServer := &PlayerServer{store: store}
+		playerServer := NewPlayerServer(store)
 		playerServer.ServeHTTP(response, request)
 
 		assertStatusCode(t, response.Code, http.StatusOK)
@@ -33,7 +33,7 @@ func TestGETPlayers(t *testing.T) {
 		response := httptest.NewRecorder()
 
 		store := initPlayersStore()
-		playerServer := &PlayerServer{store: store}
+		playerServer := NewPlayerServer(store)
 		playerServer.ServeHTTP(response, request)
 
 		assertStatusCode(t, response.Code, http.StatusOK)
@@ -45,7 +45,7 @@ func TestGETPlayers(t *testing.T) {
 		response := httptest.NewRecorder()
 
 		store := initPlayersStore()
-		playerServer := &PlayerServer{store: store}
+		playerServer := NewPlayerServer(store)
 
 		playerServer.ServeHTTP(response, request)
 
@@ -66,7 +66,7 @@ func TestPostgresGetPlayer(t *testing.T) {
 		defer store.Teardown()
 		clearPostgresStore(t, store)
 
-		playerServer := &PlayerServer{store: store}
+		playerServer := NewPlayerServer(store)
 		playerServer.ServeHTTP(response, request)
 
 		want := http.StatusNotFound
@@ -83,7 +83,7 @@ func TestPostgresGetPlayer(t *testing.T) {
 		defer store.Teardown()
 		clearPostgresStore(t, store)
 
-		playerServer := &PlayerServer{store: store}
+		playerServer := NewPlayerServer(store)
 		playerServer.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
 		playerServer.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
 		playerServer.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
@@ -104,7 +104,7 @@ func TestStoreWins(t *testing.T) {
 		request := newPostScoreRequest(player)
 		response := httptest.NewRecorder()
 
-		playerServer := &PlayerServer{store: store}
+		playerServer := NewPlayerServer(store)
 		playerServer.ServeHTTP(response, request)
 
 		assertStatusCode(t, response.Code, http.StatusAccepted)
@@ -123,7 +123,7 @@ func TestLeague(t *testing.T) {
 
 	t.Run("It returns 200 on GET /league", func(t *testing.T) {
 		store := initPlayersStore()
-		server := &PlayerServer{store: store}
+		server := NewPlayerServer(store)
 
 		response := httptest.NewRecorder()
 		server.ServeHTTP(response, newGetLeagueRequest())
@@ -141,7 +141,7 @@ func TestPostgresStoreWin(t *testing.T) {
 	defer store.Teardown()
 	clearPostgresStore(t, store)
 
-	playerServer := &PlayerServer{store: store}
+	playerServer := NewPlayerServer(store)
 
 	response := httptest.NewRecorder()
 	playerServer.ServeHTTP(response, newPostScoreRequest(player))
@@ -156,7 +156,7 @@ func TestPostgresStoreWin(t *testing.T) {
 func TestInMemoryStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	store := NewInMemoryPlayerStore()
 
-	server := &PlayerServer{store: store}
+	server := NewPlayerServer(store)
 	player := "Luffy"
 
 	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
@@ -175,7 +175,7 @@ func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	store := NewPostgresPlayerStore()
 	defer store.Teardown()
 	clearPostgresStore(t, store)
-	server := &PlayerServer{store: store}
+	server := NewPlayerServer(store)
 	player := "Mo"
 
 	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
