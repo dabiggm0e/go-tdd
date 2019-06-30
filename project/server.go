@@ -22,25 +22,41 @@ var (
 )
 
 func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	player := getPlayerName(r)
+
 	switch r.Method {
 	case "GET":
-		p.showScore(w, player)
+		p.processGetRequests(w, r)
 
 	case "POST":
-		p.processWin(w, player)
+		p.processPostRequests(w, r)
 	}
 
 }
 
 func (p *PlayerServer) processGetRequests(w http.ResponseWriter, r *http.Request) {
-	//endpoint:= strings.Spli
-	switch r.URL.Path {
-	case "/players":
+
+	switch getEndpoint(r) {
+
+	case "players":
 		player := getPlayerName(r)
 		p.showScore(w, player)
+
+	default:
+		w.WriteHeader(http.StatusNotFound)
 	}
 
+}
+
+func (p *PlayerServer) processPostRequests(w http.ResponseWriter, r *http.Request) {
+	//endpoint:= strings.Spli
+	switch getEndpoint(r) {
+	case "players":
+		player := getPlayerName(r)
+		p.processWin(w, player)
+
+	default:
+		w.WriteHeader(http.StatusNotFound)
+	}
 }
 
 func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
@@ -68,6 +84,18 @@ func getPlayerName(r *http.Request) string {
 
 	if len(tokens) > 2 { // example: "/players/Mo" >> ["", "players" "Mo"]
 		return tokens[2]
+	}
+
+	return ""
+
+}
+
+func getEndpoint(r *http.Request) string {
+
+	tokens := strings.SplitN(r.URL.Path, "/", -1)
+
+	if len(tokens) > 1 { // example: "/players/Mo" >> ["", "players" "Mo"]
+		return tokens[1]
 	}
 
 	return ""
