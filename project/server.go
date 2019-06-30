@@ -25,46 +25,26 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	router := http.NewServeMux()
 
-	router.Handle("/league", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
+	router.Handle("/league", http.HandlerFunc(p.leagueHandler))
 
-	router.Handle("/players/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			p.processGetRequests(w, r)
-
-		case "POST":
-			p.processPostRequests(w, r)
-		}
-	}))
+	router.Handle("/players/", http.HandlerFunc(p.playersHandler))
 
 	router.ServeHTTP(w, r)
 }
 
-func (p *PlayerServer) processGetRequests(w http.ResponseWriter, r *http.Request) {
-
-	switch getEndpoint(r) {
-
-	case "players":
-		player := getPlayerName(r)
-		p.showScore(w, player)
-
-	default:
-		w.WriteHeader(http.StatusNotFound)
-	}
-
+func (p *PlayerServer) leagueHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
-func (p *PlayerServer) processPostRequests(w http.ResponseWriter, r *http.Request) {
-	//endpoint:= strings.Spli
-	switch getEndpoint(r) {
-	case "players":
-		player := getPlayerName(r)
-		p.processWin(w, player)
+func (p *PlayerServer) playersHandler(w http.ResponseWriter, r *http.Request) {
+	player := getPlayerName(r)
+	switch r.Method {
 
-	default:
-		w.WriteHeader(http.StatusNotFound)
+	case "GET":
+		p.showScore(w, player)
+
+	case "POST":
+		p.processWin(w, player)
 	}
 }
 
@@ -96,17 +76,4 @@ func getPlayerName(r *http.Request) string {
 	}
 
 	return ""
-
-}
-
-func getEndpoint(r *http.Request) string {
-
-	tokens := strings.SplitN(r.URL.Path, "/", -1)
-
-	if len(tokens) > 1 { // example: "/players/Mo" >> ["", "players" "Mo"]
-		return tokens[1]
-	}
-
-	return ""
-
 }
