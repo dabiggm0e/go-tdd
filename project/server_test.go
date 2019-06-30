@@ -119,6 +119,21 @@ func TestStoreWins(t *testing.T) {
 	})
 }
 
+func TestLeague(t *testing.T) {
+
+	t.Run("It returns 200 on GET /league", func(t *testing.T) {
+		store := initPlayersStore()
+		server := &PlayerServer{store: store}
+
+		response := httptest.NewRecorder()
+		server.ServeHTTP(response, newGetLeagueRequest())
+
+		assertStatusCode(t, response.Code, http.StatusOK)
+	})
+
+	////TODO: assert the returned leaderboard scores
+}
+
 func TestPostgresStoreWin(t *testing.T) {
 	player := "Ziggy"
 
@@ -196,6 +211,12 @@ func assertStatusCode(t *testing.T, got, want int) {
 ///////////////
 func newGetScoreRequest(player string) *http.Request {
 	path := fmt.Sprintf("/players/%s", player)
+	request, _ := http.NewRequest(http.MethodGet, path, nil)
+	return request
+}
+
+func newGetLeagueRequest() *http.Request {
+	path := fmt.Sprintf("/league/")
 	request, _ := http.NewRequest(http.MethodGet, path, nil)
 	return request
 }

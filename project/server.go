@@ -41,6 +41,9 @@ func (p *PlayerServer) processGetRequests(w http.ResponseWriter, r *http.Request
 		player := getPlayerName(r)
 		p.showScore(w, player)
 
+	case "league":
+		w.WriteHeader(http.StatusOK) //TODO: return the actual leaderboard score
+
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
