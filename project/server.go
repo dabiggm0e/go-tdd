@@ -15,7 +15,7 @@ type PlayerStore interface {
 
 type PlayerServer struct {
 	store        PlayerStore
-	http.Handler // embedding an http.Handler interface.
+	http.Handler // embedding an http.Handler interface..
 }
 
 var (
