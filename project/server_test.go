@@ -216,7 +216,7 @@ func newGetScoreRequest(player string) *http.Request {
 }
 
 func newGetLeagueRequest() *http.Request {
-	path := fmt.Sprintf("/league/")
+	path := fmt.Sprintf("/league")
 	request, _ := http.NewRequest(http.MethodGet, path, nil)
 	return request
 }

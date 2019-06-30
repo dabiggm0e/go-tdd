@@ -23,14 +23,23 @@ var (
 
 func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	switch r.Method {
-	case "GET":
-		p.processGetRequests(w, r)
+	router := http.NewServeMux()
 
-	case "POST":
-		p.processPostRequests(w, r)
-	}
+	router.Handle("/league", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
 
+	router.Handle("/players/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			p.processGetRequests(w, r)
+
+		case "POST":
+			p.processPostRequests(w, r)
+		}
+	}))
+
+	router.ServeHTTP(w, r)
 }
 
 func (p *PlayerServer) processGetRequests(w http.ResponseWriter, r *http.Request) {
@@ -40,9 +49,6 @@ func (p *PlayerServer) processGetRequests(w http.ResponseWriter, r *http.Request
 	case "players":
 		player := getPlayerName(r)
 		p.showScore(w, player)
-
-	case "league":
-		w.WriteHeader(http.StatusOK) //TODO: return the actual leaderboard score
 
 	default:
 		w.WriteHeader(http.StatusNotFound)
