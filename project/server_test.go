@@ -256,6 +256,10 @@ func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	assertResponseReply(t, response.Body.String(), "3")
 }
 
+//TODO: to implement the Postgres /league integration test
+func TestPostgresStoreRecordWinsAndRetrieveLeagueInJson(t *testing.T) {
+}
+
 ////////////
 /// Assertions helper functions
 ///////////
