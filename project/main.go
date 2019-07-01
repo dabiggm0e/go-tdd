@@ -64,6 +64,15 @@ func (p *PostgresPlayerStore) Teardown() {
 }
 
 func (p *PostgresPlayerStore) GetLeague() []Player {
+	/*	getLeague := `SELECT p.name, s.score FROM players p, scores s
+		 						WHERE s.id = p.id`
+
+		rows, err := p.store.Query(getLeague)
+
+		if err != nil {
+			log.Println(err)
+			return nil
+		}*/
 	return []Player{} // TODO: implementit
 }
 func (p *PostgresPlayerStore) GetPlayerScore(name string) (int, error) {

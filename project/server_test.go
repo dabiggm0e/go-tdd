@@ -153,6 +153,26 @@ func TestLeague(t *testing.T) {
 
 	})
 
+	t.Run("StubPlayerStore: Return 404 for failed /league response json parsing", func(t *testing.T) {
+		store := &StubPlayerStore{}
+		server := NewPlayerServer(store)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, newGetLeagueRequest())
+
+		assertStatusCode(t, response.Code, http.StatusNotFound)
+	})
+
+	t.Run("PostgresPlayerStore: Return 404 for failed /league response json parsing", func(t *testing.T) {
+		store := NewPostgresPlayerStore()
+		server := NewPlayerServer(store)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, newGetLeagueRequest())
+
+		assertStatusCode(t, response.Code, http.StatusNotFound)
+	})
+
 	t.Run("Test league table returning correct data", func(t *testing.T) {
 		wantedLeague := []Player{
 			{"Mo", 10},
