@@ -4,6 +4,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -134,7 +135,7 @@ func TestLeague(t *testing.T) {
 		assertStatusCode(t, response.Code, http.StatusOK)
 	})
 
-	t.Run("Return JSON scores on successful GET /league", func(t *testing.T) {
+	/*	t.Run("Return JSON scores on successful GET /league", func(t *testing.T) {
 		store := StubPlayerStore{}
 		server := NewPlayerServer(&store)
 
@@ -151,9 +152,9 @@ func TestLeague(t *testing.T) {
 			t.Fatalf("Unable to parse response from server '%s' into slice of Players, '%v'", response.Body, err)
 		}
 
-	})
+	})*/
 
-	t.Run("StubPlayerStore: Return 404 for failed /league response json parsing", func(t *testing.T) {
+	t.Run("StubPlayerStore: Return 404 for empty /league response json parsing", func(t *testing.T) {
 		store := &StubPlayerStore{}
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
@@ -163,7 +164,7 @@ func TestLeague(t *testing.T) {
 		assertStatusCode(t, response.Code, http.StatusNotFound)
 	})
 
-	t.Run("PostgresPlayerStore: Return 404 for failed /league response json parsing", func(t *testing.T) {
+	t.Run("PostgresPlayerStore: Return 404 for empty /league response json parsing", func(t *testing.T) {
 		store := NewPostgresPlayerStore()
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
@@ -173,7 +174,7 @@ func TestLeague(t *testing.T) {
 		assertStatusCode(t, response.Code, http.StatusNotFound)
 	})
 
-	t.Run("Test league table returning correct data", func(t *testing.T) {
+	t.Run("Test league table returning correct data in json", func(t *testing.T) {
 		wantedLeague := []Player{
 			{"Mo", 10},
 			{"Ziggy", 7},
@@ -189,16 +190,10 @@ func TestLeague(t *testing.T) {
 		server.ServeHTTP(response, request)
 
 		var gotLeague []Player
+		gotLeague = getLeagueFromResponse(t, response.Body)
+		//err := json.NewDecoder(response.Body).Decode(&gotLeague)
 
-		err := json.NewDecoder(response.Body).Decode(&gotLeague)
-
-		if err != nil {
-			t.Fatalf("Couldn't parse json response '%s' from server. '%v'", response.Body, err)
-		}
-
-		if !reflect.DeepEqual(gotLeague, wantedLeague) {
-			t.Errorf("Got %v want %v", gotLeague, wantedLeague)
-		}
+		assertLeague(t, gotLeague, wantedLeague)
 
 	})
 }
@@ -339,4 +334,23 @@ func clearPostgresStore(t *testing.T, p *PostgresPlayerStore) {
 
 func (s *StubPlayerStore) GetLeague() []Player {
 	return s.league
+}
+
+func getLeagueFromResponse(t *testing.T, body io.Reader) []Player {
+	t.Helper()
+	var league []Player
+	err := json.NewDecoder(body).Decode(&league)
+
+	if err != nil {
+		t.Fatalf("Couldn't parse json response '%s' from server. '%v'", body, err)
+		return nil
+	}
+
+	return league
+}
+
+func assertLeague(t *testing.T, gotLeague, wantedLeague []Player) {
+	if !reflect.DeepEqual(gotLeague, wantedLeague) {
+		t.Errorf("Got %v want %v", gotLeague, wantedLeague)
+	}
 }

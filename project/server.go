@@ -43,7 +43,13 @@ func NewPlayerServer(store PlayerStore) *PlayerServer {
 
 func (p *PlayerServer) leagueHandler(w http.ResponseWriter, r *http.Request) {
 
-	json.NewEncoder(w).Encode(p.getLeagueTable())
+	league := p.getLeagueTable()
+	if len(league) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(league)
 
 	w.WriteHeader(http.StatusOK)
 
