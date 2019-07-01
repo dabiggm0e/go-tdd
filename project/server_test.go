@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 )
 
 type StubPlayerStore struct {
 	score    map[string]int
 	winCalls []string
+	league   []Player
 }
 
 ///////////////////////////
@@ -151,7 +153,34 @@ func TestLeague(t *testing.T) {
 
 	})
 
-	////TODO: assert the returned leaderboard scores
+	t.Run("Test league table returning correct data", func(t *testing.T) {
+		wantedLeague := []Player{
+			{"Mo", 10},
+			{"Ziggy", 7},
+			{"Moon", 3},
+		}
+
+		store := StubPlayerStore{nil, nil, wantedLeague}
+		server := NewPlayerServer(&store)
+
+		request := newGetLeagueRequest()
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		var gotLeague []Player
+
+		err := json.NewDecoder(response.Body).Decode(&gotLeague)
+
+		if err != nil {
+			t.Fatalf("Couldn't parse json response '%s' from server. '%v'", response.Body, err)
+		}
+
+		if !reflect.DeepEqual(gotLeague, wantedLeague) {
+			t.Errorf("Got %v want %v", gotLeague, wantedLeague)
+		}
+
+	})
 }
 
 func TestPostgresStoreWin(t *testing.T) {
@@ -271,6 +300,10 @@ func initPlayersStore() *StubPlayerStore {
 			"Mo":    20,
 			"Ziggy": 10,
 		},
+		league: []Player{
+			{"Mo", 20},
+			{"Ziggy", 10},
+		},
 	}
 
 	return &store
@@ -282,4 +315,8 @@ func clearPostgresStore(t *testing.T, p *PostgresPlayerStore) {
 	if err != nil {
 		t.Fatalf("Unable to truncate the store. Err: %v", err)
 	}
+}
+
+func (s *StubPlayerStore) GetLeague() []Player {
+	return s.league
 }

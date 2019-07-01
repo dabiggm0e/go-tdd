@@ -12,6 +12,7 @@ import (
 type PlayerStore interface {
 	GetPlayerScore(name string) (int, error)
 	RecordWin(name string) error
+	GetLeague() []Player
 }
 
 type PlayerServer struct {
@@ -91,7 +92,8 @@ func getPlayerName(r *http.Request) string {
 }
 
 func (p *PlayerServer) getLeagueTable() []Player {
-	return []Player{
-		{"Mo", 10},
-	}
+	//return []Player{
+	//{"Mo", 10},
+	//}
+	return p.store.GetLeague()
 }

@@ -63,6 +63,9 @@ func (p *PostgresPlayerStore) Teardown() {
 	p.store.Close()
 }
 
+func (p *PostgresPlayerStore) GetLeague() []Player {
+	return []Player{} // TODO: implementit
+}
 func (p *PostgresPlayerStore) GetPlayerScore(name string) (int, error) {
 	id, err := p.getPlayerIdSql(name)
 
@@ -131,11 +134,19 @@ func (p *PostgresPlayerStore) RecordWin(name string) error {
 }
 
 type InMemoryPlayerStore struct {
-	store map[string]int
+	store  map[string]int
+	league []Player
 }
 
 func NewInMemoryPlayerStore() *InMemoryPlayerStore {
-	return &InMemoryPlayerStore{map[string]int{}}
+	return &InMemoryPlayerStore{
+		map[string]int{},
+		[]Player{},
+	}
+}
+
+func (i *InMemoryPlayerStore) GetLeague() []Player {
+	return i.league
 }
 
 func (i *InMemoryPlayerStore) GetPlayerScore(name string) (int, error) { //TODO implement inmemory store
