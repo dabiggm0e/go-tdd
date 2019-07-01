@@ -2,6 +2,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -129,6 +130,25 @@ func TestLeague(t *testing.T) {
 		server.ServeHTTP(response, newGetLeagueRequest())
 
 		assertStatusCode(t, response.Code, http.StatusOK)
+	})
+
+	t.Run("Return JSON scores on successful GET /league", func(t *testing.T) {
+		store := StubPlayerStore{}
+		server := NewPlayerServer(&store)
+
+		response := httptest.NewRecorder()
+		server.ServeHTTP(response, newGetLeagueRequest())
+
+		var got []Player
+
+		err := json.NewDecoder(response.Body).Decode(&got)
+
+		assertStatusCode(t, response.Code, http.StatusOK)
+
+		if err != nil {
+			t.Fatalf("Unable to parse response from server '%s' into slice of Players, '%v'", response.Body, err)
+		}
+
 	})
 
 	////TODO: assert the returned leaderboard scores
