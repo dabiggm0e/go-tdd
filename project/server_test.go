@@ -171,6 +171,9 @@ func TestLeague(t *testing.T) {
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 
+		defer store.Teardown()
+		clearPostgresStore(t, store)
+
 		server.ServeHTTP(response, newGetLeagueRequest())
 
 		assertStatusCode(t, response.Code, http.StatusNotFound)
@@ -256,8 +259,33 @@ func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	assertResponseReply(t, response.Body.String(), "3")
 }
 
-//TODO: to implement the Postgres /league integration test
 func TestPostgresStoreRecordWinsAndRetrieveLeagueInJson(t *testing.T) {
+
+	store := NewPostgresPlayerStore()
+	defer store.Teardown()
+	clearPostgresStore(t, store)
+
+	server := NewPlayerServer(store)
+
+	wantedLeague := []Player{
+		{"Mo", 9},
+		{"Ziggy", 17},
+		{"Su", 12},
+	}
+
+	for _, p := range wantedLeague {
+		for i := 0; i < p.Wins; i++ {
+			server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(p.Name))
+		}
+	}
+
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, newGetLeagueRequest())
+
+	gotLeague := getLeagueFromResponse(t, response.Body)
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseContentType(t, response, jsonContentType)
+	assertLeague(t, gotLeague, wantedLeague) //TODO: Test whether the order of the league affects the DeepEqual
 }
 
 ////////////

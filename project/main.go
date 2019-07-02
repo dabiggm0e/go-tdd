@@ -64,16 +64,38 @@ func (p *PostgresPlayerStore) Teardown() {
 }
 
 func (p *PostgresPlayerStore) GetLeague() []Player {
-	/*	getLeague := `SELECT p.name, s.score FROM players p, scores s
+	getLeagueSQL := `SELECT p.name, s.score FROM players p, scores s
 		 						WHERE s.id = p.id`
 
-		rows, err := p.store.Query(getLeague)
+	league := []Player{}
+
+	rows, err := p.store.Query(getLeagueSQL)
+	defer rows.Close()
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	for rows.Next() {
+		var name string
+		var wins int
+		err := rows.Scan(&name, &wins)
 
 		if err != nil {
-			log.Println(err)
+			log.Printf("%v", err)
 			return nil
-		}*/
-	return []Player{} // TODO: implementit
+		}
+
+		league = append(league, Player{name, wins})
+	}
+
+	if rows.Err() != nil {
+		log.Printf("%v", rows.Err())
+		return nil
+	}
+
+	return league
 }
 func (p *PostgresPlayerStore) GetPlayerScore(name string) (int, error) {
 	id, err := p.getPlayerIdSql(name)
