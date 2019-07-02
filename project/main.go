@@ -198,7 +198,7 @@ func main() {
 	//// TODO: implement a redis inmemory database
 	store := NewPostgresPlayerStore()
 	defer store.Teardown()
-	pserver := &PlayerServer{store: store}
+	pserver := NewPlayerServer(store)
 
 	err := http.ListenAndServe(ADDR, pserver)
 	if err != nil {
