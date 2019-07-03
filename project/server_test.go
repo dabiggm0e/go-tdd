@@ -2,15 +2,21 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 )
+
+const jsonContentType = "application/json"
 
 type StubPlayerStore struct {
 	score    map[string]int
 	winCalls []string
+	league   []Player
 }
 
 ///////////////////////////
@@ -131,7 +137,71 @@ func TestLeague(t *testing.T) {
 		assertStatusCode(t, response.Code, http.StatusOK)
 	})
 
-	////TODO: assert the returned leaderboard scores
+	/*	t.Run("Return JSON scores on successful GET /league", func(t *testing.T) {
+		store := StubPlayerStore{}
+		server := NewPlayerServer(&store)
+
+		response := httptest.NewRecorder()
+		server.ServeHTTP(response, newGetLeagueRequest())
+
+		var got []Player
+
+		err := json.NewDecoder(response.Body).Decode(&got)
+
+		assertStatusCode(t, response.Code, http.StatusOK)
+
+		if err != nil {
+			t.Fatalf("Unable to parse response from server '%s' into slice of Players, '%v'", response.Body, err)
+		}
+
+	})*/
+
+	t.Run("StubPlayerStore: Return 404 for empty /league response json parsing", func(t *testing.T) {
+		store := &StubPlayerStore{}
+		server := NewPlayerServer(store)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, newGetLeagueRequest())
+
+		assertStatusCode(t, response.Code, http.StatusNotFound)
+	})
+
+	t.Run("PostgresPlayerStore: Return 404 for empty /league response json parsing", func(t *testing.T) {
+		store := NewPostgresPlayerStore()
+		server := NewPlayerServer(store)
+		response := httptest.NewRecorder()
+
+		defer store.Teardown()
+		clearPostgresStore(t, store)
+
+		server.ServeHTTP(response, newGetLeagueRequest())
+
+		assertStatusCode(t, response.Code, http.StatusNotFound)
+	})
+
+	t.Run("Test league table returning correct data in json", func(t *testing.T) {
+		wantedLeague := []Player{
+			{"Mo", 10},
+			{"Ziggy", 7},
+			{"Moon", 3},
+		}
+
+		store := StubPlayerStore{nil, nil, wantedLeague}
+		server := NewPlayerServer(&store)
+
+		request := newGetLeagueRequest()
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		var gotLeague []Player
+		gotLeague = getLeagueFromResponse(t, response.Body)
+		//err := json.NewDecoder(response.Body).Decode(&gotLeague)
+
+		assertResponseContentType(t, response, jsonContentType)
+		assertLeague(t, gotLeague, wantedLeague)
+
+	})
 }
 
 func TestPostgresStoreWin(t *testing.T) {
@@ -187,6 +257,35 @@ func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
 
 	assertStatusCode(t, response.Code, http.StatusOK)
 	assertResponseReply(t, response.Body.String(), "3")
+}
+
+func TestPostgresStoreRecordWinsAndRetrieveLeagueInJson(t *testing.T) {
+
+	store := NewPostgresPlayerStore()
+	defer store.Teardown()
+	clearPostgresStore(t, store)
+
+	server := NewPlayerServer(store)
+
+	wantedLeague := []Player{
+		{"Mo", 9},
+		{"Ziggy", 17},
+		{"Su", 12},
+	}
+
+	for _, p := range wantedLeague {
+		for i := 0; i < p.Wins; i++ {
+			server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(p.Name))
+		}
+	}
+
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, newGetLeagueRequest())
+
+	gotLeague := getLeagueFromResponse(t, response.Body)
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseContentType(t, response, jsonContentType)
+	assertLeague(t, gotLeague, wantedLeague) //TODO: Test whether the order of the league affects the DeepEqual
 }
 
 ////////////
@@ -251,6 +350,10 @@ func initPlayersStore() *StubPlayerStore {
 			"Mo":    20,
 			"Ziggy": 10,
 		},
+		league: []Player{
+			{"Mo", 20},
+			{"Ziggy", 10},
+		},
 	}
 
 	return &store
@@ -261,5 +364,36 @@ func clearPostgresStore(t *testing.T, p *PostgresPlayerStore) {
 	_, err := p.store.Exec(truncateSql)
 	if err != nil {
 		t.Fatalf("Unable to truncate the store. Err: %v", err)
+	}
+}
+
+func (s *StubPlayerStore) GetLeague() []Player {
+	return s.league
+}
+
+func getLeagueFromResponse(t *testing.T, body io.Reader) []Player {
+	t.Helper()
+	var league []Player
+	err := json.NewDecoder(body).Decode(&league)
+
+	if err != nil {
+		t.Fatalf("Couldn't parse json response '%s' from server. '%v'", body, err)
+		return nil
+	}
+
+	return league
+}
+
+func assertLeague(t *testing.T, gotLeague, wantedLeague []Player) {
+	if !reflect.DeepEqual(gotLeague, wantedLeague) {
+		t.Errorf("Got %v want %v", gotLeague, wantedLeague)
+	}
+}
+
+func assertResponseContentType(t *testing.T, w *httptest.ResponseRecorder, want string) {
+	t.Helper()
+	got := w.Result().Header.Get("content-type")
+	if got != want {
+		t.Errorf("response did not have content-type of application/json. Got %v", got)
 	}
 }

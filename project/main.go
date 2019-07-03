@@ -63,6 +63,40 @@ func (p *PostgresPlayerStore) Teardown() {
 	p.store.Close()
 }
 
+func (p *PostgresPlayerStore) GetLeague() []Player {
+	getLeagueSQL := `SELECT p.name, s.score FROM players p, scores s
+		 						WHERE s.id = p.id`
+
+	league := []Player{}
+
+	rows, err := p.store.Query(getLeagueSQL)
+	defer rows.Close()
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	for rows.Next() {
+		var name string
+		var wins int
+		err := rows.Scan(&name, &wins)
+
+		if err != nil {
+			log.Printf("%v", err)
+			return nil
+		}
+
+		league = append(league, Player{name, wins})
+	}
+
+	if rows.Err() != nil {
+		log.Printf("%v", rows.Err())
+		return nil
+	}
+
+	return league
+}
 func (p *PostgresPlayerStore) GetPlayerScore(name string) (int, error) {
 	id, err := p.getPlayerIdSql(name)
 
@@ -131,11 +165,19 @@ func (p *PostgresPlayerStore) RecordWin(name string) error {
 }
 
 type InMemoryPlayerStore struct {
-	store map[string]int
+	store  map[string]int
+	league []Player
 }
 
 func NewInMemoryPlayerStore() *InMemoryPlayerStore {
-	return &InMemoryPlayerStore{map[string]int{}}
+	return &InMemoryPlayerStore{
+		map[string]int{},
+		[]Player{},
+	}
+}
+
+func (i *InMemoryPlayerStore) GetLeague() []Player {
+	return i.league
 }
 
 func (i *InMemoryPlayerStore) GetPlayerScore(name string) (int, error) { //TODO implement inmemory store
@@ -156,7 +198,7 @@ func main() {
 	//// TODO: implement a redis inmemory database
 	store := NewPostgresPlayerStore()
 	defer store.Teardown()
-	pserver := &PlayerServer{store: store}
+	pserver := NewPlayerServer(store)
 
 	err := http.ListenAndServe(ADDR, pserver)
 	if err != nil {
