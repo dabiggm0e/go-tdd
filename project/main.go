@@ -177,6 +177,13 @@ func NewInMemoryPlayerStore() *InMemoryPlayerStore {
 }
 
 func (i *InMemoryPlayerStore) GetLeague() []Player {
+	var league []Player
+
+	for name, wins := range i.store {
+		league = append(league, Player{name, wins})
+	}
+
+	i.league = league
 	return i.league
 }
 
@@ -196,8 +203,9 @@ func main() {
 
 	//server := &PlayerServer{NewInMemoryPlayerStore()}
 	//// TODO: implement a redis inmemory database
-	store := NewPostgresPlayerStore()
-	defer store.Teardown()
+	//store := NewPostgresPlayerStore()
+	//defer store.Teardown()
+	store := NewInMemoryPlayerStore()
 	pserver := NewPlayerServer(store)
 
 	err := http.ListenAndServe(ADDR, pserver)
