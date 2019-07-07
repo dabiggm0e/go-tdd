@@ -231,7 +231,6 @@ func TestFileStoreGetPlayer(t *testing.T) {
 		want := "0"
 
 		assertStatusCode(t, response.Code, http.StatusOK)
-		assertResponseContentType(t, response, jsonContentType)
 		assertResponseReply(t, response.Body.String(), want)
 	})
 
@@ -244,9 +243,21 @@ func TestFileStoreGetPlayer(t *testing.T) {
 		server.ServeHTTP(response, newGetScoreRequest(player))
 
 		assertStatusCode(t, response.Code, http.StatusNotFound)
-		assertResponseContentType(t, response, jsonContentType)
 
 	})
+
+	t.Run("Success recording win on POST /players/{player}", func(t *testing.T) {
+		player := "Mo"
+		store := NewFilePlayerStore()
+		server := NewPlayerServer(store)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, newPostScoreRequest(player))
+		server.ServeHTTP(response, newGetScoreRequest(player))
+
+		assertStatusCode(t, response.Code, http.StatusAccepted)
+	})
+
 }
 
 ///////////////////////////

@@ -200,6 +200,9 @@ func NewFilePlayerStore() *FilePlayerStore {
 }
 
 func (f *FilePlayerStore) GetPlayerScore(name string) (int, error) {
+	if name == "JOHNDOE" {
+		return 0, ERRPLAYERNOTFOUND
+	}
 	return 0, nil
 }
 
