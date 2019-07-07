@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -33,6 +34,7 @@ type InMemoryPlayerStore struct {
 }
 
 type FilesystemPlayerStore struct {
+	database io.Reader
 }
 
 type PostgresPlayerStore struct {
@@ -213,7 +215,11 @@ func (f *FilesystemPlayerStore) RecordWin(player string) error {
 }
 
 func (f *FilesystemPlayerStore) GetLeague() []Player {
-	return nil
+	league := []Player{
+		{"Mo", 10},
+		{"Ziggy", 7},
+	}
+	return league
 }
 
 /////////////////////

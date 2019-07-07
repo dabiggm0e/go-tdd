@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -256,6 +257,22 @@ func TestFilesystemPlayer(t *testing.T) {
 		server.ServeHTTP(response, newGetScoreRequest(player))
 
 		assertStatusCode(t, response.Code, http.StatusAccepted)
+	})
+
+	t.Run("/league from a reader", func(t *testing.T) {
+		database := strings.NewReader(`[
+			{"Mo", "Wins":10},
+			{"Ziggy", "Wins": 7}]`)
+
+		store := &FilesystemPlayerStore{database}
+
+		got := store.GetLeague()
+
+		want := []Player{
+			{"Mo", 10},
+			{"Ziggy", 7},
+		}
+		assertLeague(t, got, want)
 	})
 
 }
