@@ -219,11 +219,11 @@ func TestPostgresStoreWin(t *testing.T) {
 	assertStatusCode(t, response.Code, http.StatusAccepted)
 }
 
-func TestFileStoreGetPlayer(t *testing.T) {
+func TestFilesystemPlayer(t *testing.T) {
 
 	t.Run("Return success response on GET /players/{player}", func(t *testing.T) {
 		player := "Mo"
-		store := NewFilePlayerStore()
+		store := NewFilesystemPlayerStore()
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 
@@ -236,7 +236,7 @@ func TestFileStoreGetPlayer(t *testing.T) {
 
 	t.Run("Return 404 response on unknown GET /players/{player}", func(t *testing.T) {
 		player := "JOHNDOE"
-		store := NewFilePlayerStore()
+		store := NewFilesystemPlayerStore()
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 
@@ -248,7 +248,7 @@ func TestFileStoreGetPlayer(t *testing.T) {
 
 	t.Run("Success recording win on POST /players/{player}", func(t *testing.T) {
 		player := "Mo"
-		store := NewFilePlayerStore()
+		store := NewFilesystemPlayerStore()
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 

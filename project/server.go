@@ -27,14 +27,23 @@ type Player struct {
 	Wins int
 }
 
+type InMemoryPlayerStore struct {
+	store  map[string]int
+	league []Player
+}
+
+type FilesystemPlayerStore struct {
+}
+
+type PostgresPlayerStore struct {
+	store *sql.DB
+}
+
 var (
 	ERRPLAYERNOTFOUND = errors.New("Player not found")
 )
 
 /// Postgres store ////
-type PostgresPlayerStore struct {
-	store *sql.DB
-}
 
 func NewPostgresPlayerStore() *PostgresPlayerStore {
 	pSqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
@@ -161,10 +170,6 @@ func (p *PostgresPlayerStore) RecordWin(name string) error {
 }
 
 /// In memory store /////
-type InMemoryPlayerStore struct {
-	store  map[string]int
-	league []Player
-}
 
 func NewInMemoryPlayerStore() *InMemoryPlayerStore {
 	return &InMemoryPlayerStore{
@@ -192,25 +197,22 @@ func (i *InMemoryPlayerStore) RecordWin(name string) error {
 /////////////////////
 //File store
 
-type FilePlayerStore struct {
+func NewFilesystemPlayerStore() *FilesystemPlayerStore {
+	return &FilesystemPlayerStore{}
 }
 
-func NewFilePlayerStore() *FilePlayerStore {
-	return &FilePlayerStore{}
-}
-
-func (f *FilePlayerStore) GetPlayerScore(name string) (int, error) {
+func (f *FilesystemPlayerStore) GetPlayerScore(name string) (int, error) {
 	if name == "JOHNDOE" {
 		return 0, ERRPLAYERNOTFOUND
 	}
 	return 0, nil
 }
 
-func (f *FilePlayerStore) RecordWin(player string) error {
+func (f *FilesystemPlayerStore) RecordWin(player string) error {
 	return nil
 }
 
-func (f *FilePlayerStore) GetLeague() []Player {
+func (f *FilesystemPlayerStore) GetLeague() []Player {
 	return nil
 }
 
