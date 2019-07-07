@@ -219,6 +219,36 @@ func TestPostgresStoreWin(t *testing.T) {
 	assertStatusCode(t, response.Code, http.StatusAccepted)
 }
 
+func TestFileStoreGetPlayer(t *testing.T) {
+
+	t.Run("Return success response on GET /players/{player}", func(t *testing.T) {
+		player := "Mo"
+		store := NewFilePlayerStore()
+		server := NewPlayerServer(store)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, newGetScoreRequest(player))
+		want := "0"
+
+		assertStatusCode(t, response.Code, http.StatusOK)
+		assertResponseContentType(t, response, jsonContentType)
+		assertResponseReply(t, response.Body.String(), want)
+	})
+
+	t.Run("Return 404 response on unknown GET /players/{player}", func(t *testing.T) {
+		player := "JOHNDOE"
+		store := NewFilePlayerStore()
+		server := NewPlayerServer(store)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, newGetScoreRequest(player))
+
+		assertStatusCode(t, response.Code, http.StatusNotFound)
+		assertResponseContentType(t, response, jsonContentType)
+
+	})
+}
+
 ///////////////////////////
 ////// Integration Tests
 ///////////////////////////
