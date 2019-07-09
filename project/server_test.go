@@ -381,6 +381,57 @@ func TestPostgresStoreRecordWinsAndRetrieveLeagueInJson(t *testing.T) {
 	assertLeague(t, gotLeague, wantedLeague) //TODO: Test whether the order of the league affects the DeepEqual
 }
 
+func TestFilesystemPlayerStoreIntegration(t *testing.T) {
+	database, cleanDatabase := createTempFile(t, "")
+	defer cleanDatabase()
+	store := NewFilesystemPlayerStore(database)
+	server := NewPlayerServer(store)
+
+	// test getting a new player
+	player := "Mo"
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, newGetScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusNotFound)
+
+	// test inserting a new player
+	want := "1"
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusAccepted)
+	server.ServeHTTP(response, newGetScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseReply(t, response.Body.String(), want)
+
+	// test recording multiple wins for existing player
+	want = "4"
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	server.ServeHTTP(response, newGetScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseReply(t, response.Body.String(), want)
+
+	// test inserting a new player
+	player = "Ziggy"
+	want = "2"
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusAccepted)
+	server.ServeHTTP(response, newGetScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseReply(t, response.Body.String(), want)
+
+	// test getting the league
+	wantedLeague := League{
+		{"Mo", 4},
+		{"Ziggy", 1},
+	}
+	server.ServeHTTP(response, newGetLeagueRequest())
+	gotLeague := getLeagueFromResponse(t, response.Body)
+	assertResponseContentType(t, response, jsonContentType)
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertLeague(t, gotLeague, wantedLeague)
+}
+
 ////////////
 /// Assertions helper functions
 ///////////
