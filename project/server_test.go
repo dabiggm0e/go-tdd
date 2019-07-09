@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -431,14 +430,8 @@ func (s *StubPlayerStore) GetLeague() []Player {
 
 func getLeagueFromResponse(t *testing.T, body io.Reader) []Player {
 	t.Helper()
-	var league []Player
-	err := json.NewDecoder(body).Decode(&league)
 
-	if err != nil {
-		t.Fatalf("Couldn't parse json response '%s' from server. '%v'", body, err)
-		return nil
-	}
-
+	league, _ := NewLeague(body)
 	return league
 }
 
