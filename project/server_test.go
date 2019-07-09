@@ -261,8 +261,8 @@ func TestFilesystemPlayer(t *testing.T) {
 
 	t.Run("/league from a reader", func(t *testing.T) {
 		database := strings.NewReader(`[
-			{"Mo", "Wins":10},
-			{"Ziggy", "Wins": 7}]`)
+			{"Name": "Mo", "Wins":10},
+			{"Name": "Ziggy", "Wins": 7}]`)
 
 		store := &FilesystemPlayerStore{database}
 

@@ -215,10 +215,8 @@ func (f *FilesystemPlayerStore) RecordWin(player string) error {
 }
 
 func (f *FilesystemPlayerStore) GetLeague() []Player {
-	league := []Player{
-		{"Mo", 10},
-		{"Ziggy", 7},
-	}
+	var league []Player
+	json.NewDecoder(f.database).Decode(&league)
 	return league
 }
 
