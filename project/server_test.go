@@ -4,10 +4,11 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -222,9 +223,11 @@ func TestPostgresStoreWin(t *testing.T) {
 func TestFilesystemPlayer(t *testing.T) {
 
 	t.Run("get player score", func(t *testing.T) {
-		database := strings.NewReader(`[
+
+		database, cleanDatabase := createTempFile(t, `[
 			{"Name": "Mo", "Wins":10},
 			{"Name": "Ziggy", "Wins": 7}]`)
+		defer cleanDatabase()
 
 		store := NewFilesystemPlayerStore(database)
 		server := NewPlayerServer(store)
@@ -242,7 +245,9 @@ func TestFilesystemPlayer(t *testing.T) {
 
 	t.Run("Return 404 response on unknown GET /players/{player}", func(t *testing.T) {
 		player := "JOHNDOE"
-		store := NewFilesystemPlayerStore(strings.NewReader(""))
+		database, cleanDatabase := createTempFile(t, "")
+		defer cleanDatabase()
+		store := NewFilesystemPlayerStore(database)
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 
@@ -254,7 +259,10 @@ func TestFilesystemPlayer(t *testing.T) {
 
 	t.Run("Success recording win on POST /players/{player}", func(t *testing.T) {
 		player := "Mo"
-		store := NewFilesystemPlayerStore(strings.NewReader(""))
+		database, cleanDatabase := createTempFile(t, "")
+		defer cleanDatabase()
+
+		store := NewFilesystemPlayerStore(database)
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 
@@ -265,9 +273,10 @@ func TestFilesystemPlayer(t *testing.T) {
 	})
 
 	t.Run("/league from a reader", func(t *testing.T) {
-		database := strings.NewReader(`[
+		database, cleanDatabse := createTempFile(t, `[
 			{"Name": "Mo", "Wins":10},
 			{"Name": "Ziggy", "Wins": 7}]`)
+		defer cleanDatabse()
 
 		store := &FilesystemPlayerStore{database}
 		want := []Player{
@@ -456,4 +465,23 @@ func assertResponseContentType(t *testing.T, w *httptest.ResponseRecorder, want 
 	if got != want {
 		t.Errorf("response did not have content-type of application/json. Got %v", got)
 	}
+}
+
+func createTempFile(t *testing.T, initialData string) (io.ReadWriteSeeker, func()) {
+	t.Helper()
+
+	tmpFile, err := ioutil.TempFile("", "db")
+
+	if err != nil {
+		t.Fatalf("could not create temp file, %v", err)
+	}
+
+	tmpFile.Write([]byte(initialData))
+
+	removeFile := func() {
+		tmpFile.Close()
+		os.Remove(tmpFile.Name())
+	}
+
+	return tmpFile, removeFile
 }

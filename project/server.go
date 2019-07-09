@@ -34,7 +34,7 @@ type InMemoryPlayerStore struct {
 }
 
 type FilesystemPlayerStore struct {
-	database io.ReadSeeker
+	database io.ReadWriteSeeker
 }
 
 type PostgresPlayerStore struct {
@@ -199,7 +199,7 @@ func (i *InMemoryPlayerStore) RecordWin(name string) error {
 /////////////////////
 //File store
 
-func NewFilesystemPlayerStore(database io.ReadSeeker) *FilesystemPlayerStore {
+func NewFilesystemPlayerStore(database io.ReadWriteSeeker) *FilesystemPlayerStore {
 	return &FilesystemPlayerStore{database}
 }
 
