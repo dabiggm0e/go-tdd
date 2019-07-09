@@ -15,7 +15,7 @@ import (
 type PlayerStore interface {
 	GetPlayerScore(name string) (int, error)
 	RecordWin(name string) error
-	GetLeague() []Player
+	GetLeague() League
 }
 
 type PlayerServer struct {
@@ -30,7 +30,7 @@ type Player struct {
 
 type InMemoryPlayerStore struct {
 	store  map[string]int
-	league []Player
+	league League
 }
 
 type FilesystemPlayerStore struct {
@@ -70,11 +70,11 @@ func (p *PostgresPlayerStore) Teardown() {
 	p.store.Close()
 }
 
-func (p *PostgresPlayerStore) GetLeague() []Player {
+func (p *PostgresPlayerStore) GetLeague() League {
 	getLeagueSQL := `SELECT p.name, s.score FROM players p, scores s
 		 						WHERE s.id = p.id`
 
-	league := []Player{}
+	league := League{}
 
 	rows, err := p.store.Query(getLeagueSQL)
 	defer rows.Close()
@@ -176,11 +176,11 @@ func (p *PostgresPlayerStore) RecordWin(name string) error {
 func NewInMemoryPlayerStore() *InMemoryPlayerStore {
 	return &InMemoryPlayerStore{
 		map[string]int{},
-		[]Player{},
+		League{},
 	}
 }
 
-func (i *InMemoryPlayerStore) GetLeague() []Player {
+func (i *InMemoryPlayerStore) GetLeague() League {
 	return i.league
 }
 
@@ -205,21 +205,47 @@ func NewFilesystemPlayerStore(database io.ReadWriteSeeker) *FilesystemPlayerStor
 
 func (f *FilesystemPlayerStore) GetPlayerScore(name string) (int, error) {
 
-	for _, player := range f.GetLeague() {
+	/*for _, player := range f.GetLeague() {
 		if player.Name == name {
 			return player.Wins, nil
 		}
+	}*/
+
+	player := f.GetLeague().Find(name)
+	if player != nil {
+		return player.Wins, nil
 	}
 
 	return 0, ERRPLAYERNOTFOUND
 
 }
 
-func (f *FilesystemPlayerStore) RecordWin(player string) error {
-	return nil
+func (f *FilesystemPlayerStore) RecordWin(name string) error {
+
+	league := f.GetLeague()
+
+	found := false
+	for i, player := range league {
+		if player.Name == name {
+			league[i].Wins++
+			found = true
+		}
+	}
+
+	if !found {
+		league = append(league, Player{Name: name, Wins: 1})
+	}
+
+	f.database.Seek(0, 0)
+	err := json.NewEncoder(f.database).Encode(league)
+
+	if err != nil {
+		log.Printf("Couldn't encode to json, %v", err)
+	}
+	return err
 }
 
-func (f *FilesystemPlayerStore) GetLeague() []Player {
+func (f *FilesystemPlayerStore) GetLeague() League {
 
 	f.database.Seek(0, 0)
 	league, _ := NewLeague(f.database)
@@ -298,8 +324,8 @@ func getPlayerName(r *http.Request) string {
 	return ""
 }
 
-func (p *PlayerServer) getLeagueTable() []Player {
-	//return []Player{
+func (p *PlayerServer) getLeagueTable() League {
+	//return League{
 	//{"Mo", 10},
 	//}
 	return p.store.GetLeague()

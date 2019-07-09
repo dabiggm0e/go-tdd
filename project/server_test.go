@@ -17,7 +17,7 @@ const jsonContentType = "application/json"
 type StubPlayerStore struct {
 	score    map[string]int
 	winCalls []string
-	league   []Player
+	league   League
 }
 
 ///////////////////////////
@@ -145,7 +145,7 @@ func TestLeague(t *testing.T) {
 		response := httptest.NewRecorder()
 		server.ServeHTTP(response, newGetLeagueRequest())
 
-		var got []Player
+		var got League
 
 		err := json.NewDecoder(response.Body).Decode(&got)
 
@@ -181,7 +181,7 @@ func TestLeague(t *testing.T) {
 	})
 
 	t.Run("Test league table returning correct data in json", func(t *testing.T) {
-		wantedLeague := []Player{
+		wantedLeague := League{
 			{"Mo", 10},
 			{"Ziggy", 7},
 			{"Moon", 3},
@@ -195,7 +195,7 @@ func TestLeague(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
-		var gotLeague []Player
+		var gotLeague League
 		gotLeague = getLeagueFromResponse(t, response.Body)
 		//err := json.NewDecoder(response.Body).Decode(&gotLeague)
 
@@ -257,7 +257,24 @@ func TestFilesystemPlayer(t *testing.T) {
 
 	})
 
-	t.Run("Success recording win on POST /players/{player}", func(t *testing.T) {
+	t.Run("store wins for existing players", func(t *testing.T) {
+		database, cleanDatabase := createTempFile(t, `[
+			{"Name": "Mo", "Wins":10},
+			{"Name": "Ziggy", "Wins": 7}]`)
+		defer cleanDatabase()
+
+		store := NewFilesystemPlayerStore(database)
+
+		player := "Mo"
+		want := 11
+
+		store.RecordWin(player)
+		got, _ := store.GetPlayerScore(player)
+
+		assertScoreEqual(t, got, want)
+	})
+
+	t.Run("Record wins for new players", func(t *testing.T) {
 		player := "Mo"
 		database, cleanDatabase := createTempFile(t, "")
 		defer cleanDatabase()
@@ -267,9 +284,10 @@ func TestFilesystemPlayer(t *testing.T) {
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, newPostScoreRequest(player))
-		server.ServeHTTP(response, newGetScoreRequest(player))
-
 		assertStatusCode(t, response.Code, http.StatusAccepted)
+
+		server.ServeHTTP(response, newGetScoreRequest(player))
+		assertResponseReply(t, response.Body.String(), "1")
 	})
 
 	t.Run("/league from a reader", func(t *testing.T) {
@@ -279,7 +297,7 @@ func TestFilesystemPlayer(t *testing.T) {
 		defer cleanDatabse()
 
 		store := &FilesystemPlayerStore{database}
-		want := []Player{
+		want := League{
 			{"Mo", 10},
 			{"Ziggy", 7},
 		}
@@ -342,7 +360,7 @@ func TestPostgresStoreRecordWinsAndRetrieveLeagueInJson(t *testing.T) {
 
 	server := NewPlayerServer(store)
 
-	wantedLeague := []Player{
+	wantedLeague := League{
 		{"Mo", 9},
 		{"Ziggy", 17},
 		{"Su", 12},
@@ -425,7 +443,7 @@ func initPlayersStore() *StubPlayerStore {
 			"Mo":    20,
 			"Ziggy": 10,
 		},
-		league: []Player{
+		league: League{
 			{"Mo", 20},
 			{"Ziggy", 10},
 		},
@@ -442,18 +460,18 @@ func clearPostgresStore(t *testing.T, p *PostgresPlayerStore) {
 	}
 }
 
-func (s *StubPlayerStore) GetLeague() []Player {
+func (s *StubPlayerStore) GetLeague() League {
 	return s.league
 }
 
-func getLeagueFromResponse(t *testing.T, body io.Reader) []Player {
+func getLeagueFromResponse(t *testing.T, body io.Reader) League {
 	t.Helper()
 
 	league, _ := NewLeague(body)
 	return league
 }
 
-func assertLeague(t *testing.T, gotLeague, wantedLeague []Player) {
+func assertLeague(t *testing.T, gotLeague, wantedLeague League) {
 	if !reflect.DeepEqual(gotLeague, wantedLeague) {
 		t.Errorf("Got %v want %v", gotLeague, wantedLeague)
 	}
@@ -484,4 +502,12 @@ func createTempFile(t *testing.T, initialData string) (io.ReadWriteSeeker, func(
 	}
 
 	return tmpFile, removeFile
+}
+
+func assertScoreEqual(t *testing.T, got, want int) {
+	t.Helper()
+
+	if got != want {
+		t.Errorf("score: got %v want %v", got, want)
+	}
 }
