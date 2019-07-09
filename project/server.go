@@ -34,7 +34,7 @@ type InMemoryPlayerStore struct {
 }
 
 type FilesystemPlayerStore struct {
-	database io.Reader
+	database io.ReadSeeker
 }
 
 type PostgresPlayerStore struct {
@@ -216,6 +216,7 @@ func (f *FilesystemPlayerStore) RecordWin(player string) error {
 
 func (f *FilesystemPlayerStore) GetLeague() []Player {
 
+	f.database.Seek(0, 0)
 	league, _ := NewLeague(f.database)
 	return league
 }

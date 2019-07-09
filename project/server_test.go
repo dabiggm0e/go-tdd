@@ -264,13 +264,15 @@ func TestFilesystemPlayer(t *testing.T) {
 			{"Name": "Ziggy", "Wins": 7}]`)
 
 		store := &FilesystemPlayerStore{database}
-
-		got := store.GetLeague()
-
 		want := []Player{
 			{"Mo", 10},
 			{"Ziggy", 7},
 		}
+
+		got := store.GetLeague()
+		assertLeague(t, got, want)
+
+		got = store.GetLeague()
 		assertLeague(t, got, want)
 	})
 
