@@ -221,22 +221,28 @@ func TestPostgresStoreWin(t *testing.T) {
 
 func TestFilesystemPlayer(t *testing.T) {
 
-	t.Run("Return success response on GET /players/{player}", func(t *testing.T) {
-		player := "Mo"
-		store := NewFilesystemPlayerStore()
-		server := NewPlayerServer(store)
-		response := httptest.NewRecorder()
+	t.Run("get player score", func(t *testing.T) {
+		database := strings.NewReader(`[
+			{"Name": "Mo", "Wins":10},
+			{"Name": "Ziggy", "Wins": 7}]`)
 
+		store := NewFilesystemPlayerStore(database)
+		server := NewPlayerServer(store)
+
+		player := "Mo"
+		want := "10"
+
+		response := httptest.NewRecorder()
 		server.ServeHTTP(response, newGetScoreRequest(player))
-		want := "0"
 
 		assertStatusCode(t, response.Code, http.StatusOK)
 		assertResponseReply(t, response.Body.String(), want)
+
 	})
 
 	t.Run("Return 404 response on unknown GET /players/{player}", func(t *testing.T) {
 		player := "JOHNDOE"
-		store := NewFilesystemPlayerStore()
+		store := NewFilesystemPlayerStore(strings.NewReader(""))
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 
@@ -248,7 +254,7 @@ func TestFilesystemPlayer(t *testing.T) {
 
 	t.Run("Success recording win on POST /players/{player}", func(t *testing.T) {
 		player := "Mo"
-		store := NewFilesystemPlayerStore()
+		store := NewFilesystemPlayerStore(strings.NewReader(""))
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 
@@ -272,6 +278,7 @@ func TestFilesystemPlayer(t *testing.T) {
 		got := store.GetLeague()
 		assertLeague(t, got, want)
 
+		// make sure the Reader is seeked to the beginning
 		got = store.GetLeague()
 		assertLeague(t, got, want)
 	})

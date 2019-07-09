@@ -199,15 +199,20 @@ func (i *InMemoryPlayerStore) RecordWin(name string) error {
 /////////////////////
 //File store
 
-func NewFilesystemPlayerStore() *FilesystemPlayerStore {
-	return &FilesystemPlayerStore{}
+func NewFilesystemPlayerStore(database io.ReadSeeker) *FilesystemPlayerStore {
+	return &FilesystemPlayerStore{database}
 }
 
 func (f *FilesystemPlayerStore) GetPlayerScore(name string) (int, error) {
-	if name == "JOHNDOE" {
-		return 0, ERRPLAYERNOTFOUND
+
+	for _, player := range f.GetLeague() {
+		if player.Name == name {
+			return player.Wins, nil
+		}
 	}
-	return 0, nil
+
+	return 0, ERRPLAYERNOTFOUND
+
 }
 
 func (f *FilesystemPlayerStore) RecordWin(player string) error {
