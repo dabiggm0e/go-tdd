@@ -205,13 +205,8 @@ func NewFilesystemPlayerStore(database io.ReadWriteSeeker) *FilesystemPlayerStor
 
 func (f *FilesystemPlayerStore) GetPlayerScore(name string) (int, error) {
 
-	/*for _, player := range f.GetLeague() {
-		if player.Name == name {
-			return player.Wins, nil
-		}
-	}*/
-
 	player := f.GetLeague().Find(name)
+
 	if player != nil {
 		return player.Wins, nil
 	}
@@ -223,16 +218,12 @@ func (f *FilesystemPlayerStore) GetPlayerScore(name string) (int, error) {
 func (f *FilesystemPlayerStore) RecordWin(name string) error {
 
 	league := f.GetLeague()
+	player := league.Find(name)
 
-	found := false
-	for i, player := range league {
-		if player.Name == name {
-			league[i].Wins++
-			found = true
-		}
-	}
+	if player != nil {
+		player.Wins++
 
-	if !found {
+	} else {
 		league = append(league, Player{Name: name, Wins: 1})
 	}
 
