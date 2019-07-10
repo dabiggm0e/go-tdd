@@ -395,17 +395,22 @@ func TestFilesystemPlayerStoreIntegration(t *testing.T) {
 
 	// test inserting a new player
 	want := "1"
+	response = httptest.NewRecorder()
 	server.ServeHTTP(response, newPostScoreRequest(player))
 	assertStatusCode(t, response.Code, http.StatusAccepted)
+
+	response = httptest.NewRecorder()
 	server.ServeHTTP(response, newGetScoreRequest(player))
 	assertStatusCode(t, response.Code, http.StatusOK)
 	assertResponseReply(t, response.Body.String(), want)
 
 	// test recording multiple wins for existing player
 	want = "4"
+
 	server.ServeHTTP(response, newPostScoreRequest(player))
 	server.ServeHTTP(response, newPostScoreRequest(player))
 	server.ServeHTTP(response, newPostScoreRequest(player))
+	response = httptest.NewRecorder()
 	server.ServeHTTP(response, newGetScoreRequest(player))
 	assertStatusCode(t, response.Code, http.StatusOK)
 	assertResponseReply(t, response.Body.String(), want)
@@ -413,9 +418,12 @@ func TestFilesystemPlayerStoreIntegration(t *testing.T) {
 	// test inserting a new player
 	player = "Ziggy"
 	want = "2"
+	response = httptest.NewRecorder()
 	server.ServeHTTP(response, newPostScoreRequest(player))
 	server.ServeHTTP(response, newPostScoreRequest(player))
 	assertStatusCode(t, response.Code, http.StatusAccepted)
+
+	response = httptest.NewRecorder()
 	server.ServeHTTP(response, newGetScoreRequest(player))
 	assertStatusCode(t, response.Code, http.StatusOK)
 	assertResponseReply(t, response.Body.String(), want)
@@ -423,8 +431,10 @@ func TestFilesystemPlayerStoreIntegration(t *testing.T) {
 	// test getting the league
 	wantedLeague := League{
 		{"Mo", 4},
-		{"Ziggy", 1},
+		{"Ziggy", 2},
 	}
+
+	response = httptest.NewRecorder()
 	server.ServeHTTP(response, newGetLeagueRequest())
 	gotLeague := getLeagueFromResponse(t, response.Body)
 	assertResponseContentType(t, response, jsonContentType)
@@ -523,6 +533,8 @@ func getLeagueFromResponse(t *testing.T, body io.Reader) League {
 }
 
 func assertLeague(t *testing.T, gotLeague, wantedLeague League) {
+	t.Helper()
+
 	if !reflect.DeepEqual(gotLeague, wantedLeague) {
 		t.Errorf("Got %v want %v", gotLeague, wantedLeague)
 	}
