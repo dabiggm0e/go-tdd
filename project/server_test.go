@@ -316,28 +316,13 @@ func TestFilesystemPlayer(t *testing.T) {
 ////// Integration Tests
 ///////////////////////////
 
-func TestInMemoryStoreRecordWinsAndRetrieveScore(t *testing.T) {
-	store := NewInMemoryPlayerStore()
-
-	server := NewPlayerServer(store)
-	player := "Luffy"
-
-	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
-	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
-	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
-
-	response := httptest.NewRecorder()
-	server.ServeHTTP(response, newGetScoreRequest(player))
-
-	assertStatusCode(t, response.Code, http.StatusOK)
-	assertResponseReply(t, response.Body.String(), "3")
-
-}
 
 func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
-	store := NewPostgresPlayerStore()
-	defer store.Teardown()
-	clearPostgresStore(t, store)
+	database, cleanDatabase := createTempFile(t, ``)
+	defer cleanDatabase()
+	store := NewFilesystemPlayerStore(database)//NewPostgresPlayerStore()
+	//defer store.Teardown()
+	//clearPostgresStore(t, store)
 	server := NewPlayerServer(store)
 	player := "Mo"
 

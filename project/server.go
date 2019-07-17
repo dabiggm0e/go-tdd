@@ -28,10 +28,6 @@ type Player struct {
 	Wins int
 }
 
-type InMemoryPlayerStore struct {
-	store  map[string]int
-	league League
-}
 
 type FilesystemPlayerStore struct {
 	database io.ReadWriteSeeker
@@ -171,30 +167,7 @@ func (p *PostgresPlayerStore) RecordWin(name string) error {
 	return err
 }
 
-/// In memory store /////
 
-func NewInMemoryPlayerStore() *InMemoryPlayerStore {
-	return &InMemoryPlayerStore{
-		map[string]int{},
-		League{},
-	}
-}
-
-func (i *InMemoryPlayerStore) GetLeague() League {
-	return i.league
-}
-
-func (i *InMemoryPlayerStore) GetPlayerScore(name string) (int, error) { //TODO implement inmemory store
-	if score, ok := i.store[name]; ok {
-		return score, nil
-	}
-	return 0, ERRPLAYERNOTFOUND
-}
-
-func (i *InMemoryPlayerStore) RecordWin(name string) error {
-	i.store[name]++
-	return nil
-}
 
 /////////////////////
 //File store

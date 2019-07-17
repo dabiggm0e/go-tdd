@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/lib/pq"
 	//"github.com/dabiggm0e/go-tdd/project/server"
@@ -23,6 +24,7 @@ const (
 	DBUSER = "postgres"
 	DBPASS = "admin"
 	DBNAME = "go-tdd"
+	dbFilename = "game.db.json"
 )
 
 func init() {
@@ -38,11 +40,18 @@ func main() {
 
 	//server := &PlayerServer{NewInMemoryPlayerStore()}
 	//// TODO: implement a redis inmemory database
-	store := NewPostgresPlayerStore()
-	defer store.Teardown()
+
+	db, err := os.OpenFile(dbFilename, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+			log.Fatalf("problem opening %s %v", dbFilename, err)
+	}
+
+	//store := NewPostgresPlayerStore()
+	//defer store.Teardown()
+	store := &FilesystemPlayerStore{db}
 	pserver := NewPlayerServer(store)
 
-	err := http.ListenAndServe(ADDR, pserver)
+	err = http.ListenAndServe(ADDR, pserver)
 	if err != nil {
 		log.Fatalf("Couldn't listen to port %v. Err: %v", ADDR, err)
 	}
