@@ -1,5 +1,5 @@
 //https://quii.gitbook.io/learn-go-with-tests/build-an-application/http-server
-package main
+package poker
 
 import (
 	"database/sql"
@@ -9,6 +9,18 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	_ "github.com/lib/pq"
+)
+
+const (
+	ADDR       = ":1111"
+	DBHOST     = "localhost"
+	DBPORT     = 5432
+	DBUSER     = "postgres"
+	DBPASS     = "admin"
+	DBNAME     = "go-tdd"
+	dbFilename = "game.db.json"
 )
 
 type PlayerStore interface {

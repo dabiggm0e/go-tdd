@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/dabiggm0e/go-tdd/project/poker"
 	_ "github.com/lib/pq"
-	//"github.com/dabiggm0e/go-tdd/project/server"
 )
 
 //flags
@@ -48,12 +48,12 @@ func main() {
 
 	//store := NewPostgresPlayerStore()
 	//defer store.Teardown()
-	store, err := NewFilesystemPlayerStore(db) //&FilesystemPlayerStore{db}
+	store, err := poker.NewFilesystemPlayerStore(db) //&FilesystemPlayerStore{db}
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	pserver := NewPlayerServer(store)
+	pserver := poker.NewPlayerServer(store)
 
 	err = http.ListenAndServe(ADDR, pserver)
 	if err != nil {
