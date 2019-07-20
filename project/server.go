@@ -28,9 +28,9 @@ type Player struct {
 	Wins int
 }
 
-
 type FilesystemPlayerStore struct {
 	database io.ReadWriteSeeker
+	league   League
 }
 
 type PostgresPlayerStore struct {
@@ -167,18 +167,22 @@ func (p *PostgresPlayerStore) RecordWin(name string) error {
 	return err
 }
 
-
-
 /////////////////////
 //File store
 
 func NewFilesystemPlayerStore(database io.ReadWriteSeeker) *FilesystemPlayerStore {
-	return &FilesystemPlayerStore{database}
+	database.Seek(0, 0)
+	league, _ := NewLeague(database)
+
+	return &FilesystemPlayerStore{
+		database: database,
+		league:   league,
+	}
 }
 
 func (f *FilesystemPlayerStore) GetPlayerScore(name string) (int, error) {
 
-	player := f.GetLeague().Find(name)
+	player := f.league.Find(name)
 
 	if player != nil {
 		return player.Wins, nil
@@ -190,18 +194,17 @@ func (f *FilesystemPlayerStore) GetPlayerScore(name string) (int, error) {
 
 func (f *FilesystemPlayerStore) RecordWin(name string) error {
 
-	league := f.GetLeague()
-	player := league.Find(name)
+	player := f.league.Find(name)
 
 	if player != nil {
 		player.Wins++
 
 	} else {
-		league = append(league, Player{Name: name, Wins: 1})
+		f.league = append(f.league, Player{Name: name, Wins: 1})
 	}
 
 	f.database.Seek(0, 0)
-	err := json.NewEncoder(f.database).Encode(league)
+	err := json.NewEncoder(f.database).Encode(f.league)
 
 	if err != nil {
 		log.Printf("Couldn't encode to json, %v", err)
@@ -210,10 +213,7 @@ func (f *FilesystemPlayerStore) RecordWin(name string) error {
 }
 
 func (f *FilesystemPlayerStore) GetLeague() League {
-
-	f.database.Seek(0, 0)
-	league, _ := NewLeague(f.database)
-	return league
+	return f.league
 }
 
 /////////////////////

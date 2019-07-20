@@ -18,12 +18,12 @@ var (
 )
 
 const (
-	ADDR   = ":1111"
-	DBHOST = "localhost"
-	DBPORT = 5432
-	DBUSER = "postgres"
-	DBPASS = "admin"
-	DBNAME = "go-tdd"
+	ADDR       = ":1111"
+	DBHOST     = "localhost"
+	DBPORT     = 5432
+	DBUSER     = "postgres"
+	DBPASS     = "admin"
+	DBNAME     = "go-tdd"
 	dbFilename = "game.db.json"
 )
 
@@ -43,12 +43,12 @@ func main() {
 
 	db, err := os.OpenFile(dbFilename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
-			log.Fatalf("problem opening %s %v", dbFilename, err)
+		log.Fatalf("problem opening %s %v", dbFilename, err)
 	}
 
 	//store := NewPostgresPlayerStore()
 	//defer store.Teardown()
-	store := &FilesystemPlayerStore{db}
+	store := NewFilesystemPlayerStore(db) //&FilesystemPlayerStore{db}
 	pserver := NewPlayerServer(store)
 
 	err = http.ListenAndServe(ADDR, pserver)

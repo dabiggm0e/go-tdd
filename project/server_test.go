@@ -296,7 +296,7 @@ func TestFilesystemPlayer(t *testing.T) {
 			{"Name": "Ziggy", "Wins": 7}]`)
 		defer cleanDatabse()
 
-		store := &FilesystemPlayerStore{database}
+		store := NewFilesystemPlayerStore(database) //&FilesystemPlayerStore{database}
 		want := League{
 			{"Mo", 10},
 			{"Ziggy", 7},
@@ -316,11 +316,10 @@ func TestFilesystemPlayer(t *testing.T) {
 ////// Integration Tests
 ///////////////////////////
 
-
 func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	database, cleanDatabase := createTempFile(t, ``)
 	defer cleanDatabase()
-	store := NewFilesystemPlayerStore(database)//NewPostgresPlayerStore()
+	store := NewFilesystemPlayerStore(database) //NewPostgresPlayerStore()
 	//defer store.Teardown()
 	//clearPostgresStore(t, store)
 	server := NewPlayerServer(store)
