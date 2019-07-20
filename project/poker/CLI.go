@@ -1,7 +1,10 @@
 package poker
 
 import (
+	"fmt"
 	"io"
+	"io/ioutil"
+	"strings"
 )
 
 type CLI struct {
@@ -10,7 +13,7 @@ type CLI struct {
 }
 
 func (c *CLI) PlayPoker() {
-	/*input, _ := ioutil.ReadAll(c.in)
+	input, _ := ioutil.ReadAll(c.in)
 	in := string(input)
 	tokens := strings.Split(string(in), " ")
 	tokens[1] = strings.TrimSpace(tokens[1])
@@ -20,6 +23,5 @@ func (c *CLI) PlayPoker() {
 		fmt.Printf("Wrong format. got %q want 'playername wins'\n", in)
 		return
 	}
-	c.playerStore.RecordWin(tokens[0])*/
-	c.playerStore.RecordWin("Ziggy")
+	c.playerStore.RecordWin(tokens[0])
 }
