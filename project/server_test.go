@@ -2,11 +2,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -16,7 +17,7 @@ const jsonContentType = "application/json"
 type StubPlayerStore struct {
 	score    map[string]int
 	winCalls []string
-	league   []Player
+	league   League
 }
 
 ///////////////////////////
@@ -144,7 +145,7 @@ func TestLeague(t *testing.T) {
 		response := httptest.NewRecorder()
 		server.ServeHTTP(response, newGetLeagueRequest())
 
-		var got []Player
+		var got League
 
 		err := json.NewDecoder(response.Body).Decode(&got)
 
@@ -180,7 +181,7 @@ func TestLeague(t *testing.T) {
 	})
 
 	t.Run("Test league table returning correct data in json", func(t *testing.T) {
-		wantedLeague := []Player{
+		wantedLeague := League{
 			{"Mo", 10},
 			{"Ziggy", 7},
 			{"Moon", 3},
@@ -194,7 +195,7 @@ func TestLeague(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
-		var gotLeague []Player
+		var gotLeague League
 		gotLeague = getLeagueFromResponse(t, response.Body)
 		//err := json.NewDecoder(response.Body).Decode(&gotLeague)
 
@@ -219,32 +220,144 @@ func TestPostgresStoreWin(t *testing.T) {
 	assertStatusCode(t, response.Code, http.StatusAccepted)
 }
 
+func TestFilesystemPlayer(t *testing.T) {
+
+	t.Run("get player score", func(t *testing.T) {
+
+		database, cleanDatabase := createTempFile(t, `[
+			{"Name": "Mo", "Wins":10},
+			{"Name": "Ziggy", "Wins": 7}]`)
+		defer cleanDatabase()
+
+		store, err := NewFilesystemPlayerStore(database)
+		assertNoError(t, err)
+		server := NewPlayerServer(store)
+
+		player := "Mo"
+		want := "10"
+
+		response := httptest.NewRecorder()
+		server.ServeHTTP(response, newGetScoreRequest(player))
+
+		assertStatusCode(t, response.Code, http.StatusOK)
+		assertResponseReply(t, response.Body.String(), want)
+
+	})
+
+	t.Run("Return 404 response on unknown GET /players/{player}", func(t *testing.T) {
+		player := "JOHNDOE"
+		database, cleanDatabase := createTempFile(t, "[]")
+		defer cleanDatabase()
+		store, err := NewFilesystemPlayerStore(database)
+		assertNoError(t, err)
+		server := NewPlayerServer(store)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, newGetScoreRequest(player))
+
+		assertStatusCode(t, response.Code, http.StatusNotFound)
+
+	})
+
+	t.Run("store wins for existing players", func(t *testing.T) {
+		database, cleanDatabase := createTempFile(t, `[
+			{"Name": "Mo", "Wins":10},
+			{"Name": "Ziggy", "Wins": 7}]`)
+		defer cleanDatabase()
+
+		store, err := NewFilesystemPlayerStore(database)
+		assertNoError(t, err)
+
+		player := "Mo"
+		want := 11
+
+		store.RecordWin(player)
+		got, _ := store.GetPlayerScore(player)
+
+		assertScoreEqual(t, got, want)
+	})
+
+	t.Run("Record wins for new players", func(t *testing.T) {
+		player := "Mo"
+		database, cleanDatabase := createTempFile(t, "[]")
+		defer cleanDatabase()
+
+		store, err := NewFilesystemPlayerStore(database)
+		assertNoError(t, err)
+
+		server := NewPlayerServer(store)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, newPostScoreRequest(player))
+		assertStatusCode(t, response.Code, http.StatusAccepted)
+
+		server.ServeHTTP(response, newGetScoreRequest(player))
+		assertResponseReply(t, response.Body.String(), "1")
+	})
+
+	t.Run("/league from a reader", func(t *testing.T) {
+		database, cleanDatabse := createTempFile(t, `[
+			{"Name": "Mo", "Wins":10},
+			{"Name": "Ziggy", "Wins": 7}]`)
+		defer cleanDatabse()
+
+		store, err := NewFilesystemPlayerStore(database) //&FilesystemPlayerStore{database}
+		assertNoError(t, err)
+		want := League{
+			{"Mo", 10},
+			{"Ziggy", 7},
+		}
+
+		got := store.GetLeague()
+		assertLeague(t, got, want)
+
+		// make sure the Reader is seeked to the beginning
+		got = store.GetLeague()
+		assertLeague(t, got, want)
+	})
+
+	t.Run("runs on empty file", func(t *testing.T) {
+		database, cleanDatabse := createTempFile(t, ``)
+		defer cleanDatabse()
+
+		_, err := NewFilesystemPlayerStore(database) //&FilesystemPlayerStore{database}
+		assertNoError(t, err)
+
+	})
+
+	t.Run("league is sorted", func(t *testing.T) {
+		database, cleanDatabse := createTempFile(t, `[
+			{"Name": "Mo", "Wins":7},
+			{"Name": "Ziggy", "Wins": 10}
+		]`)
+		defer cleanDatabse()
+
+		store, _ := NewFilesystemPlayerStore(database)
+
+		got := store.GetLeague()
+		want := []Player{
+			{"Ziggy", 10},
+			{"Mo", 7},
+		}
+
+		assertLeague(t, got, want)
+
+		got = store.GetLeague()
+		assertLeague(t, got, want)
+	})
+}
+
 ///////////////////////////
 ////// Integration Tests
 ///////////////////////////
 
-func TestInMemoryStoreRecordWinsAndRetrieveScore(t *testing.T) {
-	store := NewInMemoryPlayerStore()
-
-	server := NewPlayerServer(store)
-	player := "Luffy"
-
-	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
-	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
-	server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
-
-	response := httptest.NewRecorder()
-	server.ServeHTTP(response, newGetScoreRequest(player))
-
-	assertStatusCode(t, response.Code, http.StatusOK)
-	assertResponseReply(t, response.Body.String(), "3")
-
-}
-
 func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
-	store := NewPostgresPlayerStore()
-	defer store.Teardown()
-	clearPostgresStore(t, store)
+	database, cleanDatabase := createTempFile(t, "[]")
+	defer cleanDatabase()
+	store, err := NewFilesystemPlayerStore(database) //NewPostgresPlayerStore()
+	assertNoError(t, err)
+	//defer store.Teardown()
+	//clearPostgresStore(t, store)
 	server := NewPlayerServer(store)
 	player := "Mo"
 
@@ -267,7 +380,7 @@ func TestPostgresStoreRecordWinsAndRetrieveLeagueInJson(t *testing.T) {
 
 	server := NewPlayerServer(store)
 
-	wantedLeague := []Player{
+	wantedLeague := League{
 		{"Mo", 9},
 		{"Ziggy", 17},
 		{"Su", 12},
@@ -286,6 +399,68 @@ func TestPostgresStoreRecordWinsAndRetrieveLeagueInJson(t *testing.T) {
 	assertStatusCode(t, response.Code, http.StatusOK)
 	assertResponseContentType(t, response, jsonContentType)
 	assertLeague(t, gotLeague, wantedLeague) //TODO: Test whether the order of the league affects the DeepEqual
+}
+
+func TestFilesystemPlayerStoreIntegration(t *testing.T) {
+	database, cleanDatabase := createTempFile(t, "[]")
+	defer cleanDatabase()
+	store, err := NewFilesystemPlayerStore(database)
+	assertNoError(t, err)
+	server := NewPlayerServer(store)
+
+	// test getting a new player
+	player := "Mo"
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, newGetScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusNotFound)
+
+	// test inserting a new player
+	want := "1"
+	response = httptest.NewRecorder()
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusAccepted)
+
+	response = httptest.NewRecorder()
+	server.ServeHTTP(response, newGetScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseReply(t, response.Body.String(), want)
+
+	// test recording multiple wins for existing player
+	want = "4"
+
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	response = httptest.NewRecorder()
+	server.ServeHTTP(response, newGetScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseReply(t, response.Body.String(), want)
+
+	// test inserting a new player
+	player = "Ziggy"
+	want = "2"
+	response = httptest.NewRecorder()
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	server.ServeHTTP(response, newPostScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusAccepted)
+
+	response = httptest.NewRecorder()
+	server.ServeHTTP(response, newGetScoreRequest(player))
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertResponseReply(t, response.Body.String(), want)
+
+	// test getting the league
+	wantedLeague := League{
+		{"Mo", 4},
+		{"Ziggy", 2},
+	}
+
+	response = httptest.NewRecorder()
+	server.ServeHTTP(response, newGetLeagueRequest())
+	gotLeague := getLeagueFromResponse(t, response.Body)
+	assertResponseContentType(t, response, jsonContentType)
+	assertStatusCode(t, response.Code, http.StatusOK)
+	assertLeague(t, gotLeague, wantedLeague)
 }
 
 ////////////
@@ -350,7 +525,7 @@ func initPlayersStore() *StubPlayerStore {
 			"Mo":    20,
 			"Ziggy": 10,
 		},
-		league: []Player{
+		league: League{
 			{"Mo", 20},
 			{"Ziggy", 10},
 		},
@@ -367,24 +542,20 @@ func clearPostgresStore(t *testing.T, p *PostgresPlayerStore) {
 	}
 }
 
-func (s *StubPlayerStore) GetLeague() []Player {
+func (s *StubPlayerStore) GetLeague() League {
 	return s.league
 }
 
-func getLeagueFromResponse(t *testing.T, body io.Reader) []Player {
+func getLeagueFromResponse(t *testing.T, body io.Reader) League {
 	t.Helper()
-	var league []Player
-	err := json.NewDecoder(body).Decode(&league)
 
-	if err != nil {
-		t.Fatalf("Couldn't parse json response '%s' from server. '%v'", body, err)
-		return nil
-	}
-
+	league, _ := NewLeague(body)
 	return league
 }
 
-func assertLeague(t *testing.T, gotLeague, wantedLeague []Player) {
+func assertLeague(t *testing.T, gotLeague, wantedLeague League) {
+	t.Helper()
+
 	if !reflect.DeepEqual(gotLeague, wantedLeague) {
 		t.Errorf("Got %v want %v", gotLeague, wantedLeague)
 	}
@@ -395,5 +566,39 @@ func assertResponseContentType(t *testing.T, w *httptest.ResponseRecorder, want 
 	got := w.Result().Header.Get("content-type")
 	if got != want {
 		t.Errorf("response did not have content-type of application/json. Got %v", got)
+	}
+}
+
+func createTempFile(t *testing.T, initialData string) (*os.File, func()) {
+	t.Helper()
+
+	tmpFile, err := ioutil.TempFile("", "db")
+
+	if err != nil {
+		t.Fatalf("could not create temp file, %v", err)
+	}
+
+	tmpFile.Write([]byte(initialData))
+
+	removeFile := func() {
+		tmpFile.Close()
+		os.Remove(tmpFile.Name())
+	}
+
+	return tmpFile, removeFile
+}
+
+func assertScoreEqual(t *testing.T, got, want int) {
+	t.Helper()
+
+	if got != want {
+		t.Errorf("score: got %v want %v", got, want)
+	}
+}
+
+func assertNoError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("didn't expect an error but got one, %v", err.Error())
 	}
 }
