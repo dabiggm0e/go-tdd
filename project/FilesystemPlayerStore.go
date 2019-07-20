@@ -16,7 +16,11 @@ type FilesystemPlayerStore struct {
 //File store
 
 func NewFilesystemPlayerStore(database *os.File) (*FilesystemPlayerStore, error) {
-	database.Seek(0, 0)
+
+	if err := initializePlayerDBFile(database); err != nil {
+		log.Fatalf("problem initializing the player store file %s, %v", database.Name(), err)
+	}
+
 	league, err := NewLeague(database)
 
 	if err != nil {
@@ -26,6 +30,23 @@ func NewFilesystemPlayerStore(database *os.File) (*FilesystemPlayerStore, error)
 		database: json.NewEncoder(&tape{database}), //&tape{database},
 		league:   league,
 	}, nil
+}
+
+func initializePlayerDBFile(file *os.File) error {
+	file.Seek(0, 0)
+
+	info, err := file.Stat()
+
+	if err != nil {
+		return fmt.Errorf("problem getting file info file file %s, %v", file.Name(), err)
+	}
+
+	if info.Size() == 0 {
+		file.Write([]byte("[]"))
+		file.Seek(0, 0)
+	}
+
+	return nil
 }
 
 func (f *FilesystemPlayerStore) GetPlayerScore(name string) (int, error) {

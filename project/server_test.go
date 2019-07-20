@@ -316,6 +316,15 @@ func TestFilesystemPlayer(t *testing.T) {
 		assertLeague(t, got, want)
 	})
 
+	t.Run("runs on empty file", func(t *testing.T) {
+		database, cleanDatabse := createTempFile(t, ``)
+		defer cleanDatabse()
+
+		_, err := NewFilesystemPlayerStore(database) //&FilesystemPlayerStore{database}
+		assertNoError(t, err)
+
+	})
+
 }
 
 ///////////////////////////
