@@ -229,7 +229,8 @@ func TestFilesystemPlayer(t *testing.T) {
 			{"Name": "Ziggy", "Wins": 7}]`)
 		defer cleanDatabase()
 
-		store := NewFilesystemPlayerStore(database)
+		store, err := NewFilesystemPlayerStore(database)
+		assertNoError(t, err)
 		server := NewPlayerServer(store)
 
 		player := "Mo"
@@ -245,9 +246,10 @@ func TestFilesystemPlayer(t *testing.T) {
 
 	t.Run("Return 404 response on unknown GET /players/{player}", func(t *testing.T) {
 		player := "JOHNDOE"
-		database, cleanDatabase := createTempFile(t, "")
+		database, cleanDatabase := createTempFile(t, "[]")
 		defer cleanDatabase()
-		store := NewFilesystemPlayerStore(database)
+		store, err := NewFilesystemPlayerStore(database)
+		assertNoError(t, err)
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 
@@ -263,7 +265,8 @@ func TestFilesystemPlayer(t *testing.T) {
 			{"Name": "Ziggy", "Wins": 7}]`)
 		defer cleanDatabase()
 
-		store := NewFilesystemPlayerStore(database)
+		store, err := NewFilesystemPlayerStore(database)
+		assertNoError(t, err)
 
 		player := "Mo"
 		want := 11
@@ -276,10 +279,12 @@ func TestFilesystemPlayer(t *testing.T) {
 
 	t.Run("Record wins for new players", func(t *testing.T) {
 		player := "Mo"
-		database, cleanDatabase := createTempFile(t, "")
+		database, cleanDatabase := createTempFile(t, "[]")
 		defer cleanDatabase()
 
-		store := NewFilesystemPlayerStore(database)
+		store, err := NewFilesystemPlayerStore(database)
+		assertNoError(t, err)
+
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
 
@@ -296,7 +301,8 @@ func TestFilesystemPlayer(t *testing.T) {
 			{"Name": "Ziggy", "Wins": 7}]`)
 		defer cleanDatabse()
 
-		store := NewFilesystemPlayerStore(database) //&FilesystemPlayerStore{database}
+		store, err := NewFilesystemPlayerStore(database) //&FilesystemPlayerStore{database}
+		assertNoError(t, err)
 		want := League{
 			{"Mo", 10},
 			{"Ziggy", 7},
@@ -317,9 +323,10 @@ func TestFilesystemPlayer(t *testing.T) {
 ///////////////////////////
 
 func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
-	database, cleanDatabase := createTempFile(t, ``)
+	database, cleanDatabase := createTempFile(t, "[]")
 	defer cleanDatabase()
-	store := NewFilesystemPlayerStore(database) //NewPostgresPlayerStore()
+	store, err := NewFilesystemPlayerStore(database) //NewPostgresPlayerStore()
+	assertNoError(t, err)
 	//defer store.Teardown()
 	//clearPostgresStore(t, store)
 	server := NewPlayerServer(store)
@@ -366,9 +373,10 @@ func TestPostgresStoreRecordWinsAndRetrieveLeagueInJson(t *testing.T) {
 }
 
 func TestFilesystemPlayerStoreIntegration(t *testing.T) {
-	database, cleanDatabase := createTempFile(t, "")
+	database, cleanDatabase := createTempFile(t, "[]")
 	defer cleanDatabase()
-	store := NewFilesystemPlayerStore(database)
+	store, err := NewFilesystemPlayerStore(database)
+	assertNoError(t, err)
 	server := NewPlayerServer(store)
 
 	// test getting a new player
@@ -556,5 +564,12 @@ func assertScoreEqual(t *testing.T, got, want int) {
 
 	if got != want {
 		t.Errorf("score: got %v want %v", got, want)
+	}
+}
+
+func assertNoError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("didn't expect an error but got one, %v", err.Error())
 	}
 }

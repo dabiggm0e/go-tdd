@@ -48,7 +48,11 @@ func main() {
 
 	//store := NewPostgresPlayerStore()
 	//defer store.Teardown()
-	store := NewFilesystemPlayerStore(db) //&FilesystemPlayerStore{db}
+	store, err := NewFilesystemPlayerStore(db) //&FilesystemPlayerStore{db}
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	pserver := NewPlayerServer(store)
 
 	err = http.ListenAndServe(ADDR, pserver)
