@@ -2,9 +2,11 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -12,7 +14,7 @@ import (
 type PlayerStore interface {
 	GetPlayerScore(name string) (int, error)
 	RecordWin(name string) error
-	GetLeague() []Player
+	GetLeague() League
 }
 
 type PlayerServer struct {
@@ -25,9 +27,141 @@ type Player struct {
 	Wins int
 }
 
+type PostgresPlayerStore struct {
+	store *sql.DB
+}
+
 var (
 	ERRPLAYERNOTFOUND = errors.New("Player not found")
 )
+
+/// Postgres store ////
+
+func NewPostgresPlayerStore() *PostgresPlayerStore {
+	pSqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		DBHOST, DBPORT, DBUSER, DBPASS, DBNAME)
+
+	db, err := sql.Open("postgres", pSqlInfo)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	return &PostgresPlayerStore{store: db}
+}
+
+func (p *PostgresPlayerStore) Teardown() {
+	p.store.Close()
+}
+
+func (p *PostgresPlayerStore) GetLeague() League {
+	getLeagueSQL := `SELECT p.name, s.score FROM players p, scores s
+		 						WHERE s.id = p.id`
+
+	league := League{}
+
+	rows, err := p.store.Query(getLeagueSQL)
+	defer rows.Close()
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	for rows.Next() {
+		var name string
+		var wins int
+		err := rows.Scan(&name, &wins)
+
+		if err != nil {
+			log.Printf("%v", err)
+			return nil
+		}
+
+		league = append(league, Player{name, wins})
+	}
+
+	if rows.Err() != nil {
+		log.Printf("%v", rows.Err())
+		return nil
+	}
+
+	return league
+}
+func (p *PostgresPlayerStore) GetPlayerScore(name string) (int, error) {
+	id, err := p.getPlayerIdSql(name)
+
+	if err != nil {
+		return 0, ERRPLAYERNOTFOUND
+	}
+
+	var score int
+	getPlayerScoreSql := `SELECT "score" FROM scores WHERE id=$1;`
+	row := p.store.QueryRow(getPlayerScoreSql, id)
+
+	switch err := row.Scan(&score); err {
+	case sql.ErrNoRows:
+		return 0, ERRPLAYERNOTFOUND
+	case nil:
+		return score, nil
+	default:
+		return 0, err
+	}
+
+}
+
+func (p *PostgresPlayerStore) getPlayerIdSql(name string) (int, error) {
+	var id int
+	getUserIdSql := `SELECT "id" FROM players WHERE name=$1;`
+	row := p.store.QueryRow(getUserIdSql, name)
+
+	switch err := row.Scan(&id); err {
+	case sql.ErrNoRows:
+		return 0, ERRPLAYERNOTFOUND
+	case nil:
+		return id, nil
+	default:
+		return 0, err
+	}
+
+}
+
+func (p *PostgresPlayerStore) RecordWin(name string) error {
+	insertPlayerSql := `INSERT INTO public.players(name) VALUES($1)
+	ON CONFLICT DO NOTHING;`
+
+	_, err := p.store.Exec(insertPlayerSql, name)
+	if err != nil {
+		return err
+	}
+
+	id := 0
+	getPlayerIdSql := `SELECT id from public.players WHERE name=$1`
+	p.store.QueryRow(getPlayerIdSql, name).Scan(&id)
+
+	if err != nil || id == 0 {
+		return err
+	}
+
+	recordWinSql := `INSERT INTO public.scores(id, score)
+											VALUES ($1, 1)
+									ON CONFLICT ON CONSTRAINT scores_pkey
+									DO
+									UPDATE
+										SET score=scores.score+1`
+
+	_, err = p.store.Exec(recordWinSql, id)
+
+	return err
+}
+
+// PlayerServer
 
 func NewPlayerServer(store PlayerStore) *PlayerServer {
 	p := new(PlayerServer)
@@ -97,8 +231,8 @@ func getPlayerName(r *http.Request) string {
 	return ""
 }
 
-func (p *PlayerServer) getLeagueTable() []Player {
-	//return []Player{
+func (p *PlayerServer) getLeagueTable() League {
+	//return League{
 	//{"Mo", 10},
 	//}
 	return p.store.GetLeague()
