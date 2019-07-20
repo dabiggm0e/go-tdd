@@ -325,6 +325,26 @@ func TestFilesystemPlayer(t *testing.T) {
 
 	})
 
+	t.Run("league is sorted", func(t *testing.T) {
+		database, cleanDatabse := createTempFile(t, `[
+			{"Name": "Mo", "Wins":7},
+			{"Name": "Ziggy", "Wins": 10}
+		]`)
+		defer cleanDatabse()
+
+		store, _ := NewFilesystemPlayerStore(database)
+
+		got := store.GetLeague()
+		want := []Player{
+			{"Ziggy", 10},
+			{"Mo", 7},
+		}
+
+		assertLeague(t, got, want)
+
+		got = store.GetLeague()
+		assertLeague(t, got, want)
+	})
 }
 
 ///////////////////////////
