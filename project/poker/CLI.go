@@ -9,26 +9,32 @@ import (
 )
 
 type CLI struct {
-	playerStore PlayerStore
-	in          io.Reader
+	PlayerStore PlayerStore
+	Input       io.Reader
 }
 
 func (c *CLI) PlayPoker() {
-	reader := bufio.NewScanner(c.in)
+	reader := bufio.NewScanner(c.Input)
 	reader.Scan()
 	//input, _ := ioutil.ReadAll(c.in)
 	winner, err := extractWinner(reader.Text())
 	if err != nil {
-		fmt.Errorf("Error extracting winner. %v", err.Error())
+		fmt.Printf("Error extracting winner. %v", err.Error())
 		return
 	}
 
-	c.playerStore.RecordWin(winner)
+	c.PlayerStore.RecordWin(winner)
 }
 
 func extractWinner(in string) (winner string, err error) {
 
 	tokens := strings.Split(string(in), " ")
+
+	if len(tokens) != 2 || tokens[1] != "wins" {
+		errMessage := fmt.Sprintf("Wrong format. got %q want 'playername wins'\n", in)
+		return "", errors.New(errMessage)
+	}
+
 	tokens[1] = strings.TrimSpace(tokens[1])
 	tokens[1] = strings.ToLower(tokens[1])
 
