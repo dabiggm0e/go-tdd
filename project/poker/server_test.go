@@ -14,12 +14,6 @@ import (
 
 const jsonContentType = "application/json"
 
-type StubPlayerStore struct {
-	score    map[string]int
-	winCalls []string
-	league   League
-}
-
 ///////////////////////////
 //// Unit Tests
 ///////////////////////////
@@ -27,7 +21,7 @@ func TestGETPlayers(t *testing.T) {
 	t.Run("Getting Mo's score", func(t *testing.T) {
 		request := newGetScoreRequest("Mo")
 		response := httptest.NewRecorder()
-		store := initPlayersStore()
+		store := InitPlayersStore()
 		playerServer := NewPlayerServer(store)
 		playerServer.ServeHTTP(response, request)
 
@@ -39,7 +33,7 @@ func TestGETPlayers(t *testing.T) {
 		request := newGetScoreRequest("Ziggy")
 		response := httptest.NewRecorder()
 
-		store := initPlayersStore()
+		store := InitPlayersStore()
 		playerServer := NewPlayerServer(store)
 		playerServer.ServeHTTP(response, request)
 
@@ -51,7 +45,7 @@ func TestGETPlayers(t *testing.T) {
 		request := newGetScoreRequest("JOHNDOE")
 		response := httptest.NewRecorder()
 
-		store := initPlayersStore()
+		store := InitPlayersStore()
 		playerServer := NewPlayerServer(store)
 
 		playerServer.ServeHTTP(response, request)
@@ -106,7 +100,7 @@ func TestPostgresGetPlayer(t *testing.T) {
 func TestStoreWins(t *testing.T) {
 
 	t.Run("It records a win when POST", func(t *testing.T) {
-		store := initPlayersStore()
+		store := InitPlayersStore()
 		player := "JOHNDOE"
 		request := newPostScoreRequest(player)
 		response := httptest.NewRecorder()
@@ -129,7 +123,7 @@ func TestStoreWins(t *testing.T) {
 func TestLeague(t *testing.T) {
 
 	t.Run("It returns 200 on GET /league", func(t *testing.T) {
-		store := initPlayersStore()
+		store := InitPlayersStore()
 		server := NewPlayerServer(store)
 
 		response := httptest.NewRecorder()
@@ -504,7 +498,7 @@ func newPostScoreRequest(player string) *http.Request {
 //////////////////
 //// stub implementation
 //////////////////
-func (s *StubPlayerStore) GetPlayerScore(name string) (int, error) {
+/*func (s *StubPlayerStore) GetPlayerScore(name string) (int, error) {
 
 	if score, ok := s.score[name]; ok {
 		return score, nil
@@ -533,7 +527,7 @@ func initPlayersStore() *StubPlayerStore {
 
 	return &store
 }
-
+*/
 func clearPostgresStore(t *testing.T, p *PostgresPlayerStore) {
 	truncateSql := "TRUNCATE scores; TRUNCATE players"
 	_, err := p.store.Exec(truncateSql)
@@ -542,10 +536,11 @@ func clearPostgresStore(t *testing.T, p *PostgresPlayerStore) {
 	}
 }
 
+/*
 func (s *StubPlayerStore) GetLeague() League {
 	return s.league
 }
-
+*/
 func getLeagueFromResponse(t *testing.T, body io.Reader) League {
 	t.Helper()
 
