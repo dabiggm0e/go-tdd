@@ -10,26 +10,31 @@ import (
 
 type CLI struct {
 	PlayerStore PlayerStore
-	Input       io.Reader
+	Input       *bufio.Scanner
 }
 
 func NewCLI(store PlayerStore, in io.Reader) *CLI {
 	return &CLI{
 		PlayerStore: store,
-		Input:       bufio.NewReader(in),
+		Input:       bufio.NewScanner(in),
 	}
 }
 func (c *CLI) PlayPoker() {
-	reader := bufio.NewScanner(c.Input)
-	reader.Scan()
+
+	userInput := c.ReadLine()
 	//input, _ := ioutil.ReadAll(c.in)
-	winner, err := extractWinner(reader.Text())
+	winner, err := extractWinner(userInput)
 	if err != nil {
 		fmt.Printf("Error extracting winner. %v", err.Error())
 		return
 	}
 
 	c.PlayerStore.RecordWin(winner)
+}
+
+func (c *CLI) ReadLine() string {
+	c.Input.Scan()
+	return c.Input.Text()
 }
 
 func extractWinner(in string) (winner string, err error) {
