@@ -33,6 +33,27 @@ func NewFilesystemPlayerStore(database *os.File) (*FilesystemPlayerStore, error)
 	}, nil
 }
 
+func NewFilesystemPlayerStoreFromFile(path string) (*FilesystemPlayerStore, func(), error) {
+	db, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
+
+	if err != nil {
+		log.Fatalf("Error opening the database file %v. %v", path, err.Error())
+		return nil, nil, err
+	}
+
+	closeFunc := func() {
+		db.Close()
+	}
+
+	store, err := NewFilesystemPlayerStore(db)
+	if err != nil {
+		log.Fatalf("Error in creating the filesystem store. %v", err.Error())
+		return nil, nil, err
+	}
+
+	return store, closeFunc, nil
+}
+
 func initializePlayerDBFile(file *os.File) error {
 	file.Seek(0, 0)
 

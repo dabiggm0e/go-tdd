@@ -6,7 +6,6 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/dabiggm0e/go-tdd/project/poker"
 	_ "github.com/lib/pq"
@@ -41,17 +40,14 @@ func main() {
 	//server := &PlayerServer{NewInMemoryPlayerStore()}
 	//// TODO: implement a redis inmemory database
 
-	db, err := os.OpenFile(dbFilename, os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		log.Fatalf("problem opening %s %v", dbFilename, err)
-	}
-
 	//store := NewPostgresPlayerStore()
 	//defer store.Teardown()
-	store, err := poker.NewFilesystemPlayerStore(db) //&FilesystemPlayerStore{db}
+	store, closeFunc, err := poker.NewFilesystemPlayerStoreFromFile(dbFilename)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
+
+	defer closeFunc()
 
 	pserver := poker.NewPlayerServer(store)
 
