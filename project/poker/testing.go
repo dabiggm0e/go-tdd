@@ -36,7 +36,7 @@ func (s *StubPlayerStore) GetPlayerScore(name string) (int, error) {
 }
 
 func (s *StubPlayerStore) RecordWin(name string) error {
-	//s.score[name]++
+	// s.score[name]++
 	//return s.score[name], nil
 	s.winCalls = append(s.winCalls, name)
 	return nil

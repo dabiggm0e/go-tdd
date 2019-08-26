@@ -49,6 +49,6 @@ func CountDown(writer io.Writer, s Sleeper) {
 
 func main() {
 	//CountDown(os.Stdout, &DefaultSleeper{})
-	sleeper := &ConfigurableSleeper{1 * time.Duration, time.Sleep}         //// FIXME:
-	CountDown(os.Stdout, &ConfigurableSleeper{1 * time.Duration, sleeper}) //// FIXME:
+	//sleeper := &ConfigurableSleeper{1 * time.Duration, time.Sleep}         //// FIXME:
+	//CountDown(os.Stdout, &ConfigurableSleeper{1 * time.Duration, sleeper}) //// FIXME:
 }
