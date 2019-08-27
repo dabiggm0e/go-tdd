@@ -1,5 +1,5 @@
-package main
-
+package mocking
+/*
 import (
 	"bytes"
 	"reflect"
@@ -86,3 +86,4 @@ func TestConfigurableSleeper(t *testing.T) {
 		t.Errorf("should have slept for %v, but slept fot %v", sleepTime, spyTime.durationSlept)
 	}
 }
+*/

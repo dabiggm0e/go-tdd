@@ -1,5 +1,5 @@
-package main
-
+package mocking
+/*
 import (
 	"fmt"
 	"io"
@@ -52,3 +52,4 @@ func main() {
 	sleeper := &ConfigurableSleeper{1 * time.Duration, time.Sleep}         //// FIXME:
 	CountDown(os.Stdout, &ConfigurableSleeper{1 * time.Duration, sleeper}) //// FIXME:
 }
+*/
