@@ -1,0 +1,15 @@
+version: "3"
+services:
+  db:
+    image: "postgres:11"
+    environment:
+        POSTGRES_PASSWORD: admin
+        POSTGRES_USER: postgres
+    container_name: "my_postgres"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./go-tdd.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - my_dbdata:/var/lib/postgresql/data
+volumes:
+  my_dbdata:

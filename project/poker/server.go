@@ -18,7 +18,7 @@ const (
 	DBHOST     = "localhost"
 	DBPORT     = 5432
 	DBUSER     = "postgres"
-	DBPASS     = "admin"
+	DBPASS     = ""//"admin"
 	DBNAME     = "go-tdd"
 	dbFilename = "game.db.json"
 )
