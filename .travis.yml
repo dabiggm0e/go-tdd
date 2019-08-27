@@ -1,5 +1,5 @@
 language: go
-before_install:
+after_install:
   - docker-compose up -d
 before_script:
   - go vet ./...
