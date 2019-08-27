@@ -1,6 +1,5 @@
 language: go
-after_install:
-  - docker-compose up -d
 before_script:
+  - docker-compose up -d
   - go vet ./...
 script: go test -v ./...
