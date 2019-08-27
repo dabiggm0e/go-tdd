@@ -2,11 +2,9 @@
 package poker
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -39,15 +37,18 @@ type Player struct {
 	Wins int
 }
 
-type PostgresPlayerStore struct {
-	store *sql.DB
-}
 
 var (
 	ERRPLAYERNOTFOUND = errors.New("Player not found")
 )
 
 /// Postgres store ////
+/*
+
+type PostgresPlayerStore struct {
+	store *sql.DB
+}
+
 
 func NewPostgresPlayerStore() *PostgresPlayerStore {
 	pSqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
@@ -172,7 +173,7 @@ func (p *PostgresPlayerStore) RecordWin(name string) error {
 
 	return err
 }
-
+*/
 // PlayerServer
 
 func NewPlayerServer(store PlayerStore) *PlayerServer {

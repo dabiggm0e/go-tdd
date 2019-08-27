@@ -58,44 +58,6 @@ func TestGETPlayers(t *testing.T) {
 
 }
 
-func TestPostgresGetPlayer(t *testing.T) {
-	t.Run("PostgresPlayerStore: Return 404 on not found player", func(t *testing.T) {
-		request := newGetScoreRequest("JOHNDOE")
-		response := httptest.NewRecorder()
-
-		store := NewPostgresPlayerStore()
-		defer store.Teardown()
-		clearPostgresStore(t, store)
-
-		playerServer := NewPlayerServer(store)
-		playerServer.ServeHTTP(response, request)
-
-		want := http.StatusNotFound
-		got := response.Code
-
-		assertStatusCode(t, got, want)
-	})
-
-	t.Run("Getting Mo's score", func(t *testing.T) {
-		player := "Mo"
-		response := httptest.NewRecorder()
-
-		store := NewPostgresPlayerStore()
-		defer store.Teardown()
-		clearPostgresStore(t, store)
-
-		playerServer := NewPlayerServer(store)
-		playerServer.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
-		playerServer.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
-		playerServer.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(player))
-
-		playerServer.ServeHTTP(response, newGetScoreRequest(player))
-
-		assertStatusCode(t, response.Code, http.StatusOK)
-		assertResponseReply(t, response.Body.String(), "3")
-	})
-
-}
 
 func TestStoreWins(t *testing.T) {
 
@@ -161,7 +123,7 @@ func TestLeague(t *testing.T) {
 		assertStatusCode(t, response.Code, http.StatusNotFound)
 	})
 
-	t.Run("PostgresPlayerStore: Return 404 for empty /league response json parsing", func(t *testing.T) {
+	/*t.Run("PostgresPlayerStore: Return 404 for empty /league response json parsing", func(t *testing.T) {
 		store := NewPostgresPlayerStore()
 		server := NewPlayerServer(store)
 		response := httptest.NewRecorder()
@@ -173,7 +135,7 @@ func TestLeague(t *testing.T) {
 
 		assertStatusCode(t, response.Code, http.StatusNotFound)
 	})
-
+*/
 	t.Run("Test league table returning correct data in json", func(t *testing.T) {
 		wantedLeague := League{
 			{"Mo", 10},
@@ -199,20 +161,7 @@ func TestLeague(t *testing.T) {
 	})
 }
 
-func TestPostgresStoreWin(t *testing.T) {
-	player := "Ziggy"
 
-	store := NewPostgresPlayerStore()
-	defer store.Teardown()
-	clearPostgresStore(t, store)
-
-	playerServer := NewPlayerServer(store)
-
-	response := httptest.NewRecorder()
-	playerServer.ServeHTTP(response, newPostScoreRequest(player))
-
-	assertStatusCode(t, response.Code, http.StatusAccepted)
-}
 
 func TestFilesystemPlayer(t *testing.T) {
 
@@ -366,34 +315,6 @@ func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	assertResponseReply(t, response.Body.String(), "3")
 }
 
-func TestPostgresStoreRecordWinsAndRetrieveLeagueInJson(t *testing.T) {
-
-	store := NewPostgresPlayerStore()
-	defer store.Teardown()
-	clearPostgresStore(t, store)
-
-	server := NewPlayerServer(store)
-
-	wantedLeague := League{
-		{"Mo", 9},
-		{"Ziggy", 17},
-		{"Su", 12},
-	}
-
-	for _, p := range wantedLeague {
-		for i := 0; i < p.Wins; i++ {
-			server.ServeHTTP(httptest.NewRecorder(), newPostScoreRequest(p.Name))
-		}
-	}
-
-	response := httptest.NewRecorder()
-	server.ServeHTTP(response, newGetLeagueRequest())
-
-	gotLeague := getLeagueFromResponse(t, response.Body)
-	assertStatusCode(t, response.Code, http.StatusOK)
-	assertResponseContentType(t, response, jsonContentType)
-	assertLeague(t, gotLeague, wantedLeague) //TODO: Test whether the order of the league affects the DeepEqual
-}
 
 func TestFilesystemPlayerStoreIntegration(t *testing.T) {
 	database, cleanDatabase := createTempFile(t, "[]")
@@ -528,13 +449,6 @@ func initPlayersStore() *StubPlayerStore {
 	return &store
 }
 */
-func clearPostgresStore(t *testing.T, p *PostgresPlayerStore) {
-	truncateSql := "TRUNCATE scores; TRUNCATE players"
-	_, err := p.store.Exec(truncateSql)
-	if err != nil {
-		t.Fatalf("Unable to truncate the store. Err: %v", err)
-	}
-}
 
 /*
 func (s *StubPlayerStore) GetLeague() League {
