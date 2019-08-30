@@ -161,7 +161,23 @@ func TestLeague(t *testing.T) {
 	})
 }
 
+func TestMongoPlayerStore(t *testing.T) {
 
+	t.Run("GET unknown user return 404", func(t *testing.T){
+		request := newGetScoreRequest("Mo")
+		store, _ := newMongoPlayerStore()
+
+		server := NewPlayerServer(store)
+
+		response := httptest.NewRecorder()
+		server.ServeHTTP(response, request)
+
+		assertStatusCode(t, response.Code, http.StatusNotFound)
+	})
+
+
+
+}
 
 func TestFilesystemPlayer(t *testing.T) {
 
