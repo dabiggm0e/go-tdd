@@ -56,7 +56,31 @@ func NewMongoPlayerStore(env string) (*MongoPlayerStore, error) {
 }
 
 func (m *MongoPlayerStore) GetLeague() League {
-	return nil
+	league := League{}
+
+	filter := bson.D{{}}
+	options := options.Find()
+	options.SetSort(bson.D{{"wins", -1}}) // sort based on field "wins" descending
+
+	cur, err := m.collection.Find(context.TODO(), filter, options)
+
+	if err != nil {
+		log.Printf("Error finding documents in collection: %v", err)
+		return nil
+	}
+
+	for cur.Next(context.TODO()) {
+		var elem Player
+		err := cur.Decode(&elem)
+
+		if err != nil {
+			log.Printf("Error decoding a document")
+		} else {
+			league = append(league, elem)
+		}
+
+	}
+	return league
 }
 
 func (m *MongoPlayerStore) GetPlayerScore(player string) (int, error) {

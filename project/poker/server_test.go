@@ -240,6 +240,7 @@ func TestMongoPlayerStore(t *testing.T) {
 		assertResponseReply(t, response.Body.String(), "5")
 
 	})
+
 	t.Run("GET /league", func(t *testing.T) {
 		store, _ := NewMongoPlayerStore("test")
 		defer store.Teardown()
@@ -256,6 +257,7 @@ func TestMongoPlayerStore(t *testing.T) {
 
 		request = newGetLeagueRequest()
 		response = httptest.NewRecorder()
+		server.ServeHTTP(response, request)
 
 		assertStatusCode(t, response.Code, http.StatusOK)
 		assertResponseContentType(t, response, jsonContentType)
@@ -263,6 +265,41 @@ func TestMongoPlayerStore(t *testing.T) {
 		gotLeague := getLeagueFromResponse(t, response.Body)
 		wantedLeague := League{
 			{"Mo", 3},
+		}
+
+		assertLeague(t, gotLeague, wantedLeague)
+	})
+
+	t.Run("GET /league sorted", func(t *testing.T) {
+		store, _ := NewMongoPlayerStore("test")
+		defer store.Teardown()
+		store.deleteCollection()
+
+		player := "Mo"
+		request := newPostScoreRequest(player)
+		response := httptest.NewRecorder()
+
+		server := NewPlayerServer(store)
+		server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
+
+		player = "Ziggy"
+		request = newPostScoreRequest(player)
+		server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
+
+		request = newGetLeagueRequest()
+		response = httptest.NewRecorder()
+		server.ServeHTTP(response, request)
+
+		assertStatusCode(t, response.Code, http.StatusOK)
+		assertResponseContentType(t, response, jsonContentType)
+
+		gotLeague := getLeagueFromResponse(t, response.Body)
+		wantedLeague := League{
+			{"Ziggy", 3},
+			{"Mo", 2},
 		}
 
 		assertLeague(t, gotLeague, wantedLeague)
