@@ -60,7 +60,7 @@ func (m *MongoPlayerStore) GetLeague() League {
 
 	filter := bson.D{{}}
 	options := options.Find()
-	options.SetSort(bson.D{{"wins", -1}}) // sort based on field "wins" descending
+	options.SetSort(bson.D{{Key: "wins", Value: -1}}) // sort based on field "wins" descending
 
 	cur, err := m.collection.Find(context.TODO(), filter, options)
 
@@ -85,7 +85,7 @@ func (m *MongoPlayerStore) GetLeague() League {
 
 func (m *MongoPlayerStore) GetPlayerScore(player string) (int, error) {
 
-	filter := bson.D{{"name", player}}
+	filter := bson.D{{Key: "name", Value: player}}
 	var result Player
 
 	err := m.collection.FindOne(context.TODO(), filter).Decode(&result)
@@ -118,11 +118,11 @@ func (m *MongoPlayerStore) RecordWin(player string) error {
 		_, err = m.collection.InsertOne(context.TODO(), doc)
 
 	case nil:
-		filter := bson.D{{"name", player}}
+		filter := bson.D{{Key: "name", Value: player}}
 
 		update := bson.D{
-			{"$inc", bson.D{
-				{"wins", 1},
+			{Key: "$inc", Value: bson.D{
+				{Key: "wins", Value: 1},
 			}},
 		}
 		updateResult, err = m.collection.UpdateOne(context.TODO(), filter, update)
