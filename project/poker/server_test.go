@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -57,7 +58,6 @@ func TestGETPlayers(t *testing.T) {
 	})
 
 }
-
 
 func TestStoreWins(t *testing.T) {
 
@@ -135,7 +135,7 @@ func TestLeague(t *testing.T) {
 
 		assertStatusCode(t, response.Code, http.StatusNotFound)
 	})
-*/
+	*/
 	t.Run("Test league table returning correct data in json", func(t *testing.T) {
 		wantedLeague := League{
 			{"Mo", 10},
@@ -163,9 +163,22 @@ func TestLeague(t *testing.T) {
 
 func TestMongoPlayerStore(t *testing.T) {
 
-	t.Run("GET unknown user return 404", func(t *testing.T){
-		request := newGetScoreRequest("Mo")
-		store, _ := newMongoPlayerStore()
+	t.Run("Test connection to MongoDB", func(t *testing.T) {
+		store, err := NewMongoPlayerStore("test")
+		defer store.Teardown()
+
+		if err != nil {
+			t.Fatalf("Error connecting to the DB: %v", err.Error())
+		}
+	})
+
+	t.Run("GET unknown user return 404", func(t *testing.T) {
+		player := "AGAGAGA"
+		request := newGetScoreRequest(player)
+
+		store, _ := NewMongoPlayerStore("test")
+		defer store.Teardown()
+		store.deleteCollection()
 
 		server := NewPlayerServer(store)
 
@@ -175,8 +188,85 @@ func TestMongoPlayerStore(t *testing.T) {
 		assertStatusCode(t, response.Code, http.StatusNotFound)
 	})
 
+	t.Run("Record win for new player returns Status 201", func(t *testing.T) {
+		player := "Mo"
 
+		store, _ := NewMongoPlayerStore("test")
+		defer store.Teardown()
+		store.deleteCollection()
 
+		request := newPostScoreRequest(player)
+		response := httptest.NewRecorder()
+
+		server := NewPlayerServer(store)
+		server.ServeHTTP(response, request)
+
+		got := response.Code
+		want := http.StatusAccepted
+		assertStatusCode(t, got, want)
+
+		request = newGetScoreRequest(player)
+		server.ServeHTTP(response, request)
+
+		log.Printf("Player %s score is %v", player, response.Body)
+	})
+
+	t.Run("Record win for existing player returns Status 201", func(t *testing.T) {
+		player := "Mo"
+
+		store, _ := NewMongoPlayerStore("test")
+		defer store.Teardown()
+		store.deleteCollection()
+
+		request := newPostScoreRequest(player)
+		response := httptest.NewRecorder()
+
+		server := NewPlayerServer(store)
+		server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
+
+		got := response.Code
+		want := http.StatusAccepted
+		assertStatusCode(t, got, want)
+
+		request = newGetScoreRequest(player)
+		response = httptest.NewRecorder()
+		server.ServeHTTP(response, request)
+
+		assertStatusCode(t, response.Code, http.StatusOK)
+		assertResponseReply(t, response.Body.String(), "5")
+
+	})
+	t.Run("GET /league", func(t *testing.T) {
+		store, _ := NewMongoPlayerStore("test")
+		defer store.Teardown()
+		store.deleteCollection()
+
+		player := "Mo"
+		request := newPostScoreRequest(player)
+		response := httptest.NewRecorder()
+
+		server := NewPlayerServer(store)
+		server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
+
+		request = newGetLeagueRequest()
+		response = httptest.NewRecorder()
+
+		assertStatusCode(t, response.Code, http.StatusOK)
+		assertResponseContentType(t, response, jsonContentType)
+
+		gotLeague := getLeagueFromResponse(t, response.Body)
+		wantedLeague := League{
+			{"Mo", 3},
+		}
+
+		assertLeague(t, gotLeague, wantedLeague)
+	})
 }
 
 func TestFilesystemPlayer(t *testing.T) {
@@ -330,7 +420,6 @@ func TestPostgresStoreRecordWinsAndRetrieveScore(t *testing.T) {
 	assertStatusCode(t, response.Code, http.StatusOK)
 	assertResponseReply(t, response.Body.String(), "3")
 }
-
 
 func TestFilesystemPlayerStoreIntegration(t *testing.T) {
 	database, cleanDatabase := createTempFile(t, "[]")

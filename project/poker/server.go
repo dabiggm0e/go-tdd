@@ -33,13 +33,14 @@ type PlayerServer struct {
 }
 
 type Player struct {
-	Name string
-	Wins int
+	Name string	`bson:"name"`
+	Wins int `bson:"wins"`
 }
 
 
 var (
 	ERRPLAYERNOTFOUND = errors.New("Player not found")
+	ERRINTERNALERROR = errors.New("Internal server error") // TODO: add unit test for this error
 )
 
 /// Postgres store ////
