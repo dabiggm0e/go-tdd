@@ -12,12 +12,13 @@ const dbFileName = "game.json.db"
 
 func main() {
 
-	store, closeFunc, err := poker.NewFilesystemPlayerStoreFromFile(dbFileName)
-
+	//store, closeFunc, err := poker.NewFilesystemPlayerStoreFromFile(dbFileName)
+	store, err := poker.NewMongoPlayerStore("")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer closeFunc()
+	defer store.Teardown()
+	//defer closeFunc()
 
 	cli := poker.NewCLI(store, os.Stdin)
 
