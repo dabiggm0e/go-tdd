@@ -2,11 +2,9 @@
 package poker
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -35,19 +33,23 @@ type PlayerServer struct {
 }
 
 type Player struct {
-	Name string
-	Wins int
+	Name string	`bson:"name"`
+	Wins int `bson:"wins"`
 }
+
+
+var (
+	ERRPLAYERNOTFOUND = errors.New("Player not found")
+	ERRINTERNALERROR = errors.New("Internal server error") // TODO: add unit test for this error
+)
+
+/// Postgres store ////
+/*
 
 type PostgresPlayerStore struct {
 	store *sql.DB
 }
 
-var (
-	ERRPLAYERNOTFOUND = errors.New("Player not found")
-)
-
-/// Postgres store ////
 
 func NewPostgresPlayerStore() *PostgresPlayerStore {
 	pSqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
@@ -172,7 +174,7 @@ func (p *PostgresPlayerStore) RecordWin(name string) error {
 
 	return err
 }
-
+*/
 // PlayerServer
 
 func NewPlayerServer(store PlayerStore) *PlayerServer {

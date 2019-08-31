@@ -42,12 +42,14 @@ func main() {
 
 	//store := NewPostgresPlayerStore()
 	//defer store.Teardown()
-	store, closeFunc, err := poker.NewFilesystemPlayerStoreFromFile(dbFilename)
+	//store, closeFunc, err := poker.NewFilesystemPlayerStoreFromFile(dbFilename)
+	store, err := poker.NewMongoPlayerStore("")
+
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	defer closeFunc()
+	defer store.Teardown()
+	//defer closeFunc()
 
 	pserver := poker.NewPlayerServer(store)
 
